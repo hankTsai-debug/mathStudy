@@ -1,0 +1,341 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>數數森林 Demo</title>
+<style>
+:root{--bg:#eaf6e4;--ink:#24361f;--card:#fff;--accent:#f59e0b;--good:#22a55a;--soft:#cfe8c4;--pad:#7cc36a}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{margin:0;font-family:"PingFang TC","Noto Sans TC",system-ui,sans-serif;background:var(--bg);color:var(--ink);min-height:100vh;user-select:none;-webkit-user-select:none}
+header{display:flex;align-items:center;gap:8px;padding:12px 16px;max-width:720px;margin:0 auto}
+header h1{font-size:20px;margin:0;flex:1}
+.btn{border:0;border-radius:14px;padding:10px 14px;font-size:16px;background:var(--card);color:var(--ink);box-shadow:0 3px 0 rgba(0,0,0,.12);cursor:pointer;font-family:inherit}
+.btn:active{transform:translateY(2px);box-shadow:0 1px 0 rgba(0,0,0,.12)}
+.btn.primary{background:var(--accent);color:#fff}
+main{max-width:720px;margin:0 auto;padding:0 16px 24px}
+.screen{display:none}.screen.on{display:block}
+.mascot{display:flex;gap:12px;align-items:center;margin:4px 0 16px}
+.mascot .face{font-size:48px;line-height:1}
+.bubble{background:var(--card);border-radius:16px;padding:12px 14px;font-size:18px;flex:1;min-height:52px}
+.levels{display:grid;gap:12px}
+.level{display:flex;align-items:center;gap:12px;background:var(--card);border-radius:18px;padding:14px;cursor:pointer;border:0;font:inherit;color:inherit;text-align:left;box-shadow:0 3px 0 rgba(0,0,0,.1)}
+.level .ico{font-size:40px}
+.level .t{font-size:18px;font-weight:700}
+.level .d{font-size:14px;opacity:.75}
+.level .stars{margin-left:auto;font-size:18px;white-space:nowrap}
+.note{font-size:13px;opacity:.6;text-align:center;margin-top:20px}
+.topbar{display:flex;align-items:center;gap:12px;margin-bottom:12px}
+.progress{display:flex;gap:6px;flex:1;justify-content:center}
+.progress i{width:14px;height:14px;border-radius:50%;background:var(--soft)}
+.progress i.done{background:var(--good)}
+.stage{background:var(--card);border-radius:20px;min-height:280px;padding:16px;position:relative;overflow:hidden}
+.stage.center{text-align:center;font-size:18px}
+.big{font-size:56px;margin:16px 0}
+.choices{display:flex;gap:12px;justify-content:center;margin-top:16px;flex-wrap:wrap}
+.choice{min-width:76px;font-size:32px;font-weight:700;padding:12px 18px}
+.choice.ok{background:var(--good);color:#fff}
+.choice.no{opacity:.35}
+/* level 1 */
+.field{display:flex;flex-wrap:wrap;justify-content:center;gap:10px;padding:8px}
+.item{font-size:44px;background:none;border:0;position:relative;padding:6px;cursor:pointer;transition:transform .15s}
+.item.tapped{transform:scale(1.12)}
+.badge{position:absolute;top:-4px;right:-4px;background:var(--accent);color:#fff;border-radius:50%;width:26px;height:26px;font-size:15px;font-weight:700;display:grid;place-items:center}
+.field.flash .badge{animation:pulse .5s 2}
+@keyframes pulse{50%{transform:scale(1.5)}}
+/* level 2 */
+.line{position:relative;display:grid;grid-template-columns:repeat(11,1fr);padding-top:64px;margin-top:40px}
+.pad{background:none;border:0;display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer;padding:0;font:inherit;color:inherit}
+.lily{width:min(44px,7.5vw);aspect-ratio:1;border-radius:50%;background:var(--pad);box-shadow:inset 0 -4px 0 rgba(0,0,0,.12)}
+.pad b{font-size:18px}
+.frog{position:absolute;top:14px;width:40px;margin-left:-20px;text-align:center;font-size:36px;transition:left .45s ease}
+/* level 3 */
+.frame{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;max-width:340px;margin:24px auto;background:#8b5a2b;padding:6px;border-radius:10px}
+.cell{aspect-ratio:1;background:#fff8e7;border-radius:6px;display:grid;place-items:center;transition:background .2s}
+.dot{width:70%;aspect-ratio:1;border-radius:50%;background:#e4572e;display:block;transition:opacity .2s}
+.frame.hidden .cell{background:#d9c7a3}
+.frame.hidden .dot{opacity:0}
+</style>
+</head>
+<body>
+<header>
+  <h1 id="ttl"></h1>
+  <button class="btn" id="langBtn"></button>
+  <button class="btn" id="voiceBtn"></button>
+</header>
+<main>
+  <div class="mascot"><div class="face">🦊</div><div class="bubble" id="bubble"></div></div>
+
+  <section class="screen on" id="map">
+    <div class="levels" id="levels"></div>
+    <p class="note" id="note"></p>
+  </section>
+
+  <section class="screen" id="play">
+    <div class="topbar"><button class="btn" id="homeBtn">←</button><div class="progress" id="prog"></div></div>
+    <div class="stage" id="stage"></div>
+    <div class="choices" id="choices"></div>
+  </section>
+
+  <section class="screen" id="result">
+    <div class="stage center">
+      <div class="big" id="resStars"></div>
+      <p id="resText"></p>
+      <div class="choices"><button class="btn primary" id="againBtn"></button><button class="btn" id="backBtn"></button></div>
+    </div>
+  </section>
+</main>
+
+<script>
+const ROUNDS = 5;
+const S = { lang: 'zh', voice: true, stars: [0, 0, 0] };
+try {
+  const s = JSON.parse(localStorage.getItem('mf-demo') || 'null');
+  if (s) { S.lang = s.lang || 'zh'; S.voice = s.voice !== false; S.stars = s.stars || [0, 0, 0]; }
+} catch (e) {}
+function save() { try { localStorage.setItem('mf-demo', JSON.stringify(S)); } catch (e) {} }
+
+const T = {
+  zh: {
+    title: '數數森林',
+    hi: '嗨！我是小狐狸。森林裡有三個關卡，選一個開始吧！',
+    l1: '數一數', l1d: '一個一個點，數出總共有幾個',
+    l2: '青蛙跳數線', l2d: '在數線上跳，認識數字的位置',
+    l3: '十格框快看', l3d: '看一眼，就知道有幾個',
+    countTap: f => `把每個${f}點一下，一個一個數！`,
+    howMany: '一共有幾個？',
+    countHint: '差一點！看看你最後數到的數字是多少？',
+    jumpTo: n => `幫青蛙跳到 ${n}！`,
+    hopFwd: (s, k) => `青蛙在 ${s}，往前跳 ${k} 格，會停在哪裡？`,
+    tooSmall: i => `跳到 ${i} 了，還不夠遠，再往右邊試試！`,
+    tooBig: i => `跳到 ${i} 了，跳過頭囉，往左邊一點！`,
+    look: '仔細看！',
+    howManyDots: '剛剛有幾個點？',
+    frameHint: n => n > 5 ? `上面一排是 5 個，下面還有 ${n - 5} 個。合起來是幾個？`
+      : n === 5 ? '剛好排滿一整排喔！一排是幾個？'
+      : `上面這排還差 ${5 - n} 個才滿 5 個。所以有幾個？`,
+    praise: ['你一個一個數，好仔細！', '答對了！你用了好方法。', '太棒了，你很專心！', '對了！你越來越熟練了。'],
+    result: ok => `這一關你第一次就答對 ${ok} 題。多練習，大腦會越來越強！`,
+    again: '再玩一次', back: '回地圖',
+    note: '示範版 · 3 個關卡 · 進度只存在這台裝置',
+    langBtn: 'EN',
+  },
+  en: {
+    title: 'Counting Forest',
+    hi: "Hi! I'm Little Fox. There are three games in the forest. Pick one!",
+    l1: 'Count Them', l1d: 'Tap each one and count how many',
+    l2: 'Frog Hop', l2d: 'Hop along the number line',
+    l3: 'Ten-Frame Flash', l3d: 'One quick look — how many?',
+    countTap: f => `Tap each ${f} and count one by one!`,
+    howMany: 'How many altogether?',
+    countHint: 'So close! What was the last number you counted?',
+    jumpTo: n => `Help the frog hop to ${n}!`,
+    hopFwd: (s, k) => `The frog is on ${s}. Hop forward ${k}. Where does it land?`,
+    tooSmall: i => `You landed on ${i}. Not far enough — try further right!`,
+    tooBig: i => `You landed on ${i}. Too far — go a bit left!`,
+    look: 'Look carefully!',
+    howManyDots: 'How many dots did you see?',
+    frameHint: n => n > 5 ? `The top row has 5. The bottom row has ${n - 5} more. How many altogether?`
+      : n === 5 ? 'The top row is exactly full! How many make a full row?'
+      : `The top row needs ${5 - n} more to make 5. So how many are there?`,
+    praise: ['You counted carefully!', 'Yes! You used a good strategy.', 'Great focus!', "That's right! You're getting better and better."],
+    result: ok => `You got ${ok} right on the first try. Practice makes your brain stronger!`,
+    again: 'Play again', back: 'Back to map',
+    note: 'Demo · 3 games · progress is saved on this device only',
+    langBtn: '中文',
+  },
+};
+const t = (k, ...a) => { const v = T[S.lang][k]; return typeof v === 'function' ? v(...a) : v; };
+
+const $ = id => document.getElementById(id);
+const stage = $('stage'), choicesEl = $('choices'), bubble = $('bubble');
+const rnd = (a, b) => a + Math.floor(Math.random() * (b - a + 1));
+const pick = arr => arr[Math.floor(Math.random() * arr.length)];
+const wait = ms => new Promise(r => setTimeout(r, ms));
+function el(tag, cls, text) { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
+function shuffle(a) { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
+
+function say(text) {
+  if (!S.voice || !window.speechSynthesis) return;
+  speechSynthesis.cancel();
+  const u = new SpeechSynthesisUtterance(text.replace(/\p{Extended_Pictographic}/gu, ''));
+  u.lang = S.lang === 'zh' ? 'zh-TW' : 'en-US';
+  const v = speechSynthesis.getVoices().find(v => v.lang.replace('_', '-') === u.lang);
+  if (v) u.voice = v;
+  u.rate = 0.95;
+  speechSynthesis.speak(u);
+}
+function setPrompt(text) { bubble.textContent = text; say(text); }
+
+// Three options: the answer and its neighbours, kept inside [min, max].
+function opts(n, min, max) {
+  const set = new Set([n]);
+  for (const d of [-1, 1, -2, 2, 3]) { const v = n + d; if (set.size < 3 && v >= min && v <= max) set.add(v); }
+  return shuffle([...set]);
+}
+
+/* ---------- screens ---------- */
+function show(id) { for (const s of document.querySelectorAll('.screen')) s.classList.toggle('on', s.id === id); }
+
+const LEVELS = [{ ico: '🍎', key: 'l1' }, { ico: '🐸', key: 'l2' }, { ico: '🔟', key: 'l3' }];
+function renderChrome() {
+  document.documentElement.lang = S.lang === 'zh' ? 'zh-Hant' : 'en';
+  $('ttl').textContent = t('title');
+  $('langBtn').textContent = t('langBtn');
+  $('voiceBtn').textContent = S.voice ? '🔊' : '🔇';
+  $('note').textContent = t('note');
+  $('againBtn').textContent = t('again');
+  $('backBtn').textContent = t('back');
+}
+function renderMap() {
+  roundSeq++;
+  renderChrome();
+  const box = $('levels'); box.innerHTML = '';
+  LEVELS.forEach((lv, i) => {
+    const b = el('button', 'level');
+    b.innerHTML = `<span class="ico">${lv.ico}</span><span><div class="t"></div><div class="d"></div></span><span class="stars">${'⭐'.repeat(S.stars[i])}${'☆'.repeat(3 - S.stars[i])}</span>`;
+    b.querySelector('.t').textContent = t(lv.key);
+    b.querySelector('.d').textContent = t(lv.key + 'd');
+    b.onclick = () => startLevel(i);
+    box.appendChild(b);
+  });
+  bubble.textContent = t('hi');
+  show('map');
+}
+
+$('langBtn').onclick = () => { S.lang = S.lang === 'zh' ? 'en' : 'zh'; save(); renderChrome(); if ($('map').classList.contains('on')) renderMap(); };
+$('voiceBtn').onclick = () => { S.voice = !S.voice; if (!S.voice && window.speechSynthesis) speechSynthesis.cancel(); save(); renderChrome(); };
+$('homeBtn').onclick = renderMap;
+$('backBtn').onclick = renderMap;
+$('againBtn').onclick = () => startLevel(G.lv);
+
+/* ---------- game loop ---------- */
+let G = null, roundSeq = 0;
+function startLevel(i) { G = { lv: i, round: 0, ok: 0 }; show('play'); nextRound(); }
+function nextRound() {
+  if (G.round >= ROUNDS) return finish();
+  G.tries = 0; G.id = ++roundSeq;
+  stage.innerHTML = ''; choicesEl.innerHTML = '';
+  $('prog').innerHTML = Array.from({ length: ROUNDS }, (_, i) => `<i class="${i < G.round ? 'done' : ''}"></i>`).join('');
+  [roundCount, roundLine, roundFrame][G.lv]();
+}
+const live = id => id === roundSeq; // false once the player left or moved on
+
+function success() {
+  if (G.tries === 0) G.ok++;
+  G.round++;
+  setPrompt(pick(T[S.lang].praise));
+  const id = G.id;
+  setTimeout(() => { if (live(id)) nextRound(); }, 1800);
+}
+function finish() {
+  const stars = G.ok >= 5 ? 3 : G.ok >= 3 ? 2 : 1;
+  S.stars[G.lv] = Math.max(S.stars[G.lv], stars); save();
+  $('resStars').textContent = '⭐'.repeat(stars) + '☆'.repeat(3 - stars);
+  $('resText').textContent = t('result', G.ok);
+  setPrompt(t('result', G.ok));
+  show('result');
+}
+function choices(vals, answer, onWrong) {
+  choicesEl.innerHTML = '';
+  vals.forEach(v => {
+    const b = el('button', 'btn choice', v);
+    b.onclick = () => {
+      if (v === answer) {
+        b.classList.add('ok');
+        for (const c of choicesEl.children) c.disabled = true;
+        success();
+      } else {
+        G.tries++; b.classList.add('no'); b.disabled = true;
+        onWrong();
+      }
+    };
+    choicesEl.appendChild(b);
+  });
+}
+
+/* Level 1: one-to-one counting, then cardinality ("the last number is how many"). */
+function roundCount() {
+  const n = rnd(3, Math.min(10, 5 + G.round));
+  const fruit = pick(['🍎', '🍓', '🍐', '🍊', '🍄']);
+  const field = el('div', 'field'); stage.appendChild(field);
+  setPrompt(t('countTap', fruit));
+  let c = 0;
+  for (let i = 0; i < n; i++) {
+    const b = el('button', 'item', fruit);
+    b.style.margin = `${rnd(0, 18)}px ${rnd(2, 14)}px`;
+    b.onclick = () => {
+      if (b.classList.contains('tapped')) return;
+      c++; b.classList.add('tapped');
+      b.appendChild(el('span', 'badge', c));
+      say(String(c));
+      if (c === n) { const id = G.id; setTimeout(() => { if (live(id)) ask(); }, 700); }
+    };
+    field.appendChild(b);
+  }
+  function ask() {
+    setPrompt(t('howMany'));
+    choices(opts(n, 1, 10), n, () => {
+      setPrompt(t('countHint'));
+      field.classList.remove('flash'); void field.offsetWidth; field.classList.add('flash');
+    });
+  }
+}
+
+/* Level 2: linear number line (Siegler & Ramani). Rounds 1–2 locate a number, 3–5 hop forward. */
+function roundLine() {
+  let start, target;
+  if (G.round < 2) { start = 0; target = rnd(3, 10); setPrompt(t('jumpTo', target)); }
+  else { start = rnd(1, 5); const k = rnd(1, Math.min(5, 10 - start)); target = start + k; setPrompt(t('hopFwd', start, k)); }
+  const line = el('div', 'line'); stage.appendChild(line);
+  for (let i = 0; i <= 10; i++) {
+    const p = el('button', 'pad');
+    p.innerHTML = `<span class="lily"></span><b>${i}</b>`;
+    p.onclick = () => tap(i);
+    line.appendChild(p);
+  }
+  const frog = el('div', 'frog', '🐸'); line.appendChild(frog);
+  const id = G.id;
+  let pos = start, busy = false, done = false;
+  const place = i => { frog.style.left = `${(i + 0.5) / 11 * 100}%`; };
+  place(pos);
+  async function hop(to) {
+    const step = to > pos ? 1 : -1;
+    while (pos !== to && live(id)) { pos += step; place(pos); say(String(pos)); await wait(550); }
+  }
+  async function tap(i) {
+    if (busy || done) return;
+    busy = true;
+    await hop(i);
+    if (!live(id)) return;
+    if (i === target) { done = true; success(); }
+    else {
+      G.tries++;
+      setPrompt(t(i < target ? 'tooSmall' : 'tooBig', i));
+      await wait(1800);
+      await hop(start);
+    }
+    busy = false;
+  }
+}
+
+/* Level 3: subitizing with a ten-frame (5 + n structure). */
+function roundFrame() {
+  const n = G.round < 2 ? rnd(1, 5) : rnd(4, 10);
+  const frame = el('div', 'frame'); stage.appendChild(frame);
+  for (let i = 0; i < 10; i++) { const c = el('div', 'cell'); if (i < n) c.appendChild(el('i', 'dot')); frame.appendChild(c); }
+  setPrompt(t('look'));
+  const id = G.id;
+  setTimeout(() => {
+    if (!live(id)) return;
+    frame.classList.add('hidden');
+    setPrompt(t('howManyDots'));
+    choices(opts(n, 1, 10), n, () => { frame.classList.remove('hidden'); setPrompt(t('frameHint', n)); });
+  }, 1800);
+}
+
+if (window.speechSynthesis) speechSynthesis.getVoices(); // warm up the voice list
+renderMap();
+</script>
+</body>
+</html>
