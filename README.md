@@ -4,34 +4,46 @@ A game-based math app for children aged 5–10, mapped to Taiwan's 108 curriculu
 
 Proposal (Chinese): https://claude.ai/artifact/7NN5ax9NUK6emES3BsCLTs
 
-## What's playable
+## Islands
 
-| Island | Level | Practises |
+9 islands, 3 levels each, 5 rounds per level. Stars count rounds answered right on the first try. A wrong answer gets a strategy hint, never a red ✗.
+
+| Island | Opens after | Levels |
 |---|---|---|
-| 🌳 數數森林 Counting Forest | 🍎 數一數 Count Them | One-to-one counting, then "the last number is how many" |
-| | 🐸 青蛙跳數線 Frog Hop | Locating numbers on a 0–10 line, hopping forward |
-| | 🔟 十格框快看 Ten-Frame Flash | Recognising amounts at a glance as "5 and some more" |
-| 🌊 十的海灣 Ten Bay | 🐚 湊十 Make Ten | How many more make 10 |
-| | 🐟 十和幾 Ten and Some More | 11–19 as one ten and some ones |
+| 🌳 數數森林 Counting Forest | — | 數一數 count, 青蛙跳數線 number line, 十格框快看 ten-frame flash |
+| 🌊 十的海灣 Ten Bay | 數數森林 | 湊十 make ten, 十和幾 11–19, 開船加減 add/subtract to 20 |
+| ⛰️ 位值山谷 Place Value Valley | 十的海灣 | 積木合體 base-ten blocks, 數字住哪裡 digit value, 直式加減 carrying/borrowing |
+| 🔷 形狀工坊 Shape Workshop (side quest) | 數數森林 | 形狀名字 shapes, 對折看看 symmetry, 量量看 measuring |
+| 🌾 乘法農場 Times Farm | 位值山谷 | 排排菜園 arrays, 九九乘法 times tables, 平分紅蘿蔔 sharing |
+| 🏪 時間錢幣市集 Time & Money Market (side quest) | 十的海灣 | 看時鐘 clocks, 數錢 coins, 找零錢 change |
+| 🍰 分數廚房 Fraction Kitchen | 乘法農場 | 切披薩 fractions, 分數數線 fractions on a line, 一樣多 equivalent fractions |
+| ⚓ 大數港口 Big Number Port | 分數廚房 | 大數位值 big place values, 面積與周長 area/perimeter, 小數 decimals |
+| 🧩 挑戰島 Challenge Island | 數數森林 | 找規律 patterns, 天平推理 balance, 雞兔同籠 heads and legs |
 
-Each level is 5 rounds. Stars count rounds answered right on the first try. Wrong answers get a hint, never a red ✗. Ten Bay unlocks once every Counting Forest level has a star; add `?all` to the URL to open everything.
+An island opens once every level on the island it follows has a star. Add `?all` to the URL to open everything.
+
+Wrong choices are the mistakes children typically make (forgetting to carry, reading the end of a ruler that doesn't start at 0, counting tick marks instead of parts, adding instead of multiplying for equal fractions), so a miss tells you something.
 
 ## Develop
 
 ```sh
 npm install
 npm run dev      # http://localhost:5173
-npm test         # round generators and scoring
+npm test         # unit tests: every generator's answers and choices
+npm run e2e      # plays all 27 levels in Chrome (uses your installed Chrome)
 npm run lint
 npm run build
 ```
 
 ## Layout
 
-- `src/game/logic.ts`: pure round generators and scoring (unit-tested)
-- `src/levels/`: one component per level kind, plus shared `Choices`, `TenFrame` and timer hooks
-- `src/islands.ts`: island and level list, unlock rule
-- `src/i18n.ts`: all zh-TW and English text
+- `src/game/logic.ts`, `src/game/quizzes.ts`: pure round generators and scoring (unit-tested)
+- `src/levels/`: the five hand-built levels, the generic `QuizLevel`, its registry (`quizConfig.ts`) and visuals (`visuals.tsx`)
+- `src/islands.ts`: islands, levels, unlock rule
+- `src/i18n.ts`: all zh-TW and English text, including prompts and hints
 - `src/speech.ts`: browser text-to-speech (to be replaced by recorded voice lines)
 - `src/store.ts`: progress in `localStorage`
+- `e2e/`: Playwright play-through
 - `prototype/index.html`: the first single-file prototype, kept for reference
+
+To add a level: write a generator in `quizzes.ts`, a visual in `visuals.tsx`, its text in `i18n.ts`, then register it in `quizConfig.ts` and `islands.ts`.

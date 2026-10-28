@@ -68,14 +68,14 @@ export default function App() {
 
         {screen.name === 'map' && (
           <section className="cards">
-            {ISLANDS.map((island, i) => {
-              const open = UNLOCK_ALL || isUnlocked(i, progress.stars)
+            {ISLANDS.map(island => {
+              const open = UNLOCK_ALL || isUnlocked(island, progress.stars)
               const earned = island.levels.reduce((sum, l) => sum + (progress.stars[l.id] ?? 0), 0)
               return (
                 <button
                   key={island.id}
                   className={`card${open ? '' : ' locked'}`}
-                  onClick={() => (open ? goIsland(island) : prompt(t.locked))}
+                  onClick={() => (open ? goIsland(island) : prompt(t.locked(t.islands[island.requires!].name)))}
                 >
                   <span className="ico">{open ? island.icon : '🔒'}</span>
                   <span><div className="name">{t.islands[island.id].name}</div><div className="desc">{t.islands[island.id].desc}</div></span>

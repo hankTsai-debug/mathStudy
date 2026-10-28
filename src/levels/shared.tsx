@@ -1,4 +1,5 @@
-import { useState } from 'react'
+import { useState, type ReactNode } from 'react'
+import type { Answer } from '../game/quizzes'
 import type { Strings } from '../i18n'
 
 export interface LevelContext {
@@ -13,29 +14,40 @@ export interface LevelContext {
 
 export interface LevelProps { round: number; ctx: LevelContext }
 
-export function Choices({ values, answer, onCorrect, onWrong }: {
-  values: number[]
-  answer: number
+/** Fractions like "3/4" render stacked; numbers get thousands separators. */
+function defaultLabel(v: Answer): ReactNode {
+  if (typeof v === 'number') return v.toLocaleString('en-US')
+  const m = /^(\d+)\/(\d+)$/.exec(v)
+  return m ? <span className="frac"><span>{m[1]}</span><span>{m[2]}</span></span> : v
+}
+
+export function Choices({ values, answer, onCorrect, onWrong, label = defaultLabel }: {
+  values: Answer[]
+  answer: Answer
   onCorrect: () => void
   onWrong: () => void
+  label?: (v: Answer) => ReactNode
 }) {
-  const [missed, setMissed] = useState<number[]>([])
+  const [missed, setMissed] = useState<Answer[]>([])
   const [done, setDone] = useState(false)
   return (
     <div className="choices">
-      {values.map(v => (
-        <button
-          key={v}
-          className={`btn choice${done && v === answer ? ' ok' : ''}${missed.includes(v) ? ' no' : ''}`}
-          disabled={done || missed.includes(v)}
-          onClick={() => {
-            if (v === answer) { setDone(true); onCorrect() }
-            else { setMissed(m => [...m, v]); onWrong() }
-          }}
-        >
-          {v}
-        </button>
-      ))}
+      {values.map(v => {
+        const text = label(v)
+        return (
+          <button
+            key={String(v)}
+            className={`btn choice${typeof text === 'string' && text.length > 3 ? ' wordy' : ''}${done && v === answer ? ' ok' : ''}${missed.includes(v) ? ' no' : ''}`}
+            disabled={done || missed.includes(v)}
+            onClick={() => {
+              if (v === answer) { setDone(true); onCorrect() }
+              else { setMissed(m => [...m, v]); onWrong() }
+            }}
+          >
+            {text}
+          </button>
+        )
+      })}
     </div>
   )
 }

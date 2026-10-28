@@ -7,10 +7,12 @@ import { FlashLevel } from './levels/FlashLevel'
 import { LineLevel } from './levels/LineLevel'
 import { MakeTenLevel } from './levels/MakeTenLevel'
 import { TeenLevel } from './levels/TeenLevel'
+import { QuizLevel } from './levels/QuizLevel'
 import { useLater } from './levels/hooks'
+import type { QuizKind } from './levels/quizConfig'
 import type { LevelContext, LevelProps } from './levels/shared'
 
-const LEVELS: Record<LevelKind, ComponentType<LevelProps>> = {
+const CUSTOM: Partial<Record<LevelKind, ComponentType<LevelProps>>> = {
   count: CountLevel,
   line: LineLevel,
   flash: FlashLevel,
@@ -48,7 +50,7 @@ export function Play({ level, t, prompt, say, onExit, onDone }: {
     },
   }), [t, prompt, say, later, round, onDone])
 
-  const Round = LEVELS[level.kind]
+  const Custom = CUSTOM[level.kind]
   return (
     <section>
       <div className="topbar">
@@ -57,7 +59,9 @@ export function Play({ level, t, prompt, say, onExit, onDone }: {
           {Array.from({ length: ROUNDS }, (_, i) => <i key={i} className={i < round ? 'done' : ''} />)}
         </div>
       </div>
-      <Round key={round} round={round} ctx={ctx} />
+      {Custom
+        ? <Custom key={round} round={round} ctx={ctx} />
+        : <QuizLevel key={round} kind={level.kind as QuizKind} round={round} ctx={ctx} />}
     </section>
   )
 }
