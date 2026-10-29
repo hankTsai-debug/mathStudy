@@ -113,29 +113,29 @@ async function watchLesson(page: Page, next = '下一步', done = '換你試試�
   await expect(page.locator('.stage.lesson')).toHaveCount(0)
 }
 
-/** Plays the "do one together" problem: tap the offered cells, answer each question (one wrong first, which must hint). */
+/** Plays the "do one together" problem: tap whatever is offered, answer each question (one wrong first, which must hint). */
 async function doGuide(page: Page) {
   await expect(page.getByRole('heading', { name: '🤝 一起做' })).toBeVisible()
   let wrong = true
   for (let i = 0; i < 200; i++) {
     const start = page.getByRole('button', { name: '開始練習！' })
     if (await start.isVisible()) { await start.click(); return }
-    const cell = page.locator('.cell.tap').first()
-    if (await cell.isVisible()) { await cell.click(); continue }
-    const value = await page.locator('.stage').first().getAttribute('data-answer')
-    if (value !== null && await page.locator('.choice.ok').count() === 0) { await answer(page, value, wrong); wrong = false; continue }
+    const target = page.locator('.stage .tap:not([disabled])').first()
+    if (await target.count() && await target.isVisible()) { await target.click(); continue }
+    // Read the answer and "not yet answered" together, so a step change can't slip in between.
+    const value = await page.evaluate(() =>
+      document.querySelector('.choice.ok') ? null : document.querySelector('.stage')?.getAttribute('data-answer') ?? null)
+    if (value !== null) { await answer(page, value, wrong); wrong = false; continue }
     await page.waitForTimeout(100)
   }
   throw new Error('guide never finished')
 }
 
-const GUIDED = new Set(['湊十', '十和幾', '開船加減'])
-
 async function playLevel(page: Page, island: string, level: string) {
   await card(page, island).click()
   await card(page, level).click()
   await watchLesson(page)
-  if (GUIDED.has(level)) await doGuide(page)
+  await doGuide(page)
   for (let round = 0; round < 5; round++) {
     await expect(page.locator('.progress i.done')).toHaveCount(round, { timeout: 15_000 })
     await expect(page.locator('.choice.ok')).toHaveCount(0)
@@ -179,7 +179,7 @@ test('islands unlock along the map', async ({ page }) => {
   expect(await locked()).toEqual(['位值山谷', '乘法農場', '時間錢幣市集', '分數廚房', '大數港口'])
 })
 
-test('a level already played skips the lesson, and 📖 replays it', async ({ page }) => {
+test('a level already played skips the lesson, and 📖 replays it and the guide', async ({ page }) => {
   await seed(page, { 'forest-flash': 2 })
   await page.goto('/')
   await card(page, '數數森林').click()
@@ -187,6 +187,7 @@ test('a level already played skips the lesson, and 📖 replays it', async ({ pa
   await expect(page.locator('.frame.hidden')).toBeVisible()
   await page.getByRole('button', { name: 'lesson' }).click()
   await watchLesson(page)
+  await doGuide(page)
   await expect(page.locator('.frame.hidden')).toBeVisible()
 })
 
@@ -200,5 +201,6 @@ test('switches to English everywhere', async ({ page }) => {
   await card(page, 'Pizza Slices').click()
   await expect(page.locator('.bubble')).toHaveText('Cut the pizza into 4 equal slices.')
   await watchLesson(page, 'Next', 'Your turn!')
-  await expect(page.locator('.bubble')).toHaveText('What fraction is shaded?')
+  await expect(page.getByRole('heading', { name: '🤝 Together' })).toBeVisible()
+  await expect(page.locator('.bubble')).toHaveText('How many equal slices is the pizza cut into?')
 })

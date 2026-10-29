@@ -212,3 +212,29 @@ h2 { font-size: 20px; margin: 0; }
 .frame .cell { position: relative; }
 .frame .cell .badge { top: -4px; right: -4px; width: 20px; height: 20px; font-size: 12px; z-index: 1; }
 @keyframes nudge { 50% { background: #ffe8b8; } }
+
+/* Guided problems */
+.tap:not(:disabled) { cursor: pointer; }
+.item.tap, .coin.tap, .tgroup.tap, .pile.tap, .pad.tap { animation: nudge-glow 1.4s ease-in-out infinite; }
+@keyframes nudge-glow { 50% { filter: drop-shadow(0 0 6px var(--accent)); } }
+button.item, button.coin, button.pile { font-family: inherit; }
+button.item, button.pile { border: 0; }
+button.coin { padding: 0; }
+button.coin:disabled, button.item:disabled, button.tgroup:disabled { opacity: 1; color: inherit; }
+.fold { width: 100%; }
+.fold > .bars { width: 100%; }
+button.pile { background: none; font-size: 22px; padding: 6px; }
+.pad.tap { outline: 3px dashed var(--accent); outline-offset: 2px; border-radius: 8px; }
+.corner { fill: #fff; stroke: var(--accent); stroke-width: 3; }
+.corner.tap { cursor: pointer; animation: nudge 1.4s ease-in-out infinite; }
+.corner.on { fill: var(--accent); }
+.corner-n { fill: #fff; font-size: 14px; font-weight: 700; text-anchor: middle; }
+.fold { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+.ghost { opacity: .45; fill: var(--dot-extra); }
+.tap-groups { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; }
+.tap-groups.rows { flex-direction: column; align-items: center; }
+.tgroup { position: relative; display: flex; gap: 2px; padding: 6px 8px; border-radius: 12px; border: 2px dashed var(--soft); background: #fff; font: inherit; font-size: 24px; }
+.tap-groups.groups .tgroup { font-size: 16px; flex-wrap: wrap; max-width: 90px; }
+.tgroup.counted { border-color: var(--good); background: #eaf8ef; }
+.coin { position: relative; }
+.coin .badge { top: -10px; right: -10px; }

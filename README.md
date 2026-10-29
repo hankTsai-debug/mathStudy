@@ -6,7 +6,13 @@ Proposal (Chinese): https://claude.ai/artifact/7NN5ax9NUK6emES3BsCLTs
 
 ## Islands
 
-9 islands, 3 levels each. Each level teaches first, then practises: a short "watch me" lesson (a worked example, 3–5 narrated steps with pictures) opens on the first visit and can be replayed with 📖; then 5 practice rounds. Stars count rounds answered right on the first try. A wrong answer gets a strategy hint, never a red ✗.
+9 islands, 3 levels each. Each level runs in three parts, "I do, we do, you do":
+
+1. 📖 **Watch me**: a worked example, 3–5 narrated steps with pictures.
+2. 🤝 **Together**: the child solves one problem step by step (tapping apples, hopping the frog, folding a shape, dealing carrots, answering each sub-question) while the fox leads. Not scored.
+3. ✏️ **Practice**: 5 rounds; stars count the ones right on the first try.
+
+Parts 1–2 open on the first visit to a level; 📖 replays them during practice. Stars count rounds answered right on the first try. A wrong answer gets a strategy hint, never a red ✗.
 
 | Island | Opens after | Levels |
 |---|---|---|
@@ -40,7 +46,7 @@ npm run build
 ## Layout
 
 - `src/game/logic.ts`, `src/game/quizzes.ts`: pure round generators and scoring (unit-tested)
-- `src/levels/`: the lessons (`lessons.tsx` pictures, narration in `i18n.ts` under `teach`), the five hand-built levels, the generic `QuizLevel`, its registry (`quizConfig.ts`) and visuals (`visuals.tsx`)
+- `src/levels/`: the lessons (`lessons.tsx`, narration under `teach` in `i18n.ts`), the guided problems (`guides.tsx`, narration under `guide`), the five hand-built levels, the generic `QuizLevel`, its registry (`quizConfig.ts`) and visuals (`visuals.tsx`)
 - `src/islands.ts`: islands, levels, unlock rule
 - `src/i18n.ts`: all zh-TW and English text, including prompts and hints
 - `src/speech.ts`: browser text-to-speech (to be replaced by recorded voice lines)
@@ -48,4 +54,4 @@ npm run build
 - `e2e/`: Playwright play-through
 - `prototype/index.html`: the first single-file prototype, kept for reference
 
-To add a level: write a generator in `quizzes.ts`, a visual in `visuals.tsx`, its text and lesson narration in `i18n.ts`, its lesson steps in `lessons.tsx`, then register it in `quizConfig.ts` and `islands.ts`.
+To add a level: write a generator in `quizzes.ts`, a visual in `visuals.tsx`, its text and lesson narration in `i18n.ts`, its lesson steps in `lessons.tsx`, its guided problem in `guides.tsx`, then register it in `quizConfig.ts` and `islands.ts`.

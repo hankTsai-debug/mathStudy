@@ -1,7 +1,6 @@
 // One visual per choice-based level. Each receives its round's data and whether the round
 // is solved, so it can reveal the worked answer (e.g. carrots handed out) after a correct choice.
 import type { ReactNode } from 'react'
-import type { GuideCell } from './guides'
 import type {
   Add20, Area, ArrayQ, Balance, Blocks, Change, Clock, Coins, Column, Decimal, DigitValue, FracEqual, Fraction, Legs,
   Measure, Pattern, Share, Shape, ShapeName, Symmetry, SymShape, Times,
@@ -356,8 +355,11 @@ export function NumberLine({ frog, trail = [] }: { frog: number; trail?: number[
   )
 }
 
+/** One ten-frame cell in a guided problem: a red (a) or blue (b) dot, a count badge, and whether it can be tapped now. */
+export interface FrameCell { dot?: 'a' | 'b'; badge?: string; tap?: boolean }
+
 /** Ten-frames for a guided problem: tappable cells are buttons, tapped dots carry their count. */
-export function GuideFrames({ cells, onTap }: { cells: GuideCell[]; onTap: (i: number) => void }) {
+export function GuideFrames({ cells, onTap }: { cells: FrameCell[]; onTap: () => void }) {
   return (
     <div className="frames">
       {Array.from({ length: cells.length / 10 }, (_, f) => (
@@ -367,11 +369,128 @@ export function GuideFrames({ cells, onTap }: { cells: GuideCell[]; onTap: (i: n
             const dot = c.dot && <i className={`dot${c.dot === 'b' ? ' extra' : ''}`} />
             const badge = c.badge && <span className="badge">{c.badge}</span>
             return c.tap
-              ? <button key={i} className="cell tap" onClick={() => onTap(i)} aria-label={`cell ${i}`}>{dot}</button>
+              ? <button key={i} className="cell tap" onClick={onTap} aria-label={`cell ${i}`}>{dot}</button>
               : <div key={i} className="cell">{dot}{badge}</div>
           })}
         </div>
       ))}
+    </div>
+  )
+}
+
+/* ---------- guided-problem pictures: tappable parts carry the `tap` class ---------- */
+
+interface Tappable { tapped: number; active: boolean; onTap: () => void }
+
+/** Items to count; the first `tapped` carry their number, the rest are tappable. */
+export function TapItems({ n, emoji, tapped, active, onTap }: Tappable & { n: number; emoji: string }) {
+  return (
+    <div className="field">
+      {Array.from({ length: n }, (_, i) => i < tapped
+        ? <span key={i} className="item tapped">{emoji}<span className="badge">{i + 1}</span></span>
+        : <button key={i} className="item tap" disabled={!active} onClick={onTap}>{emoji}</button>)}
+    </div>
+  )
+}
+
+/** The frog has hopped `tapped` pads from `start`; only the next pad can be tapped. */
+export function TapLine({ start, tapped, hops, active, onTap }: Tappable & { start: number; hops: number }) {
+  const frog = start + tapped
+  return (
+    <div className="line">
+      {Array.from({ length: 11 }, (_, i) => {
+        const next = active && i === frog + 1 && tapped < hops
+        const body = <><span className="lily" /><b>{i}</b></>
+        return next
+          ? <button key={i} className="pad tap" onClick={onTap} aria-label={String(i)}>{body}</button>
+          : <span key={i} className={`pad${i > start && i <= frog ? ' trail' : ''}`}>{body}</span>
+      })}
+      <div className="frog" style={{ left: `${((frog + 0.5) / 11) * 100}%` }}>🐸</div>
+    </div>
+  )
+}
+
+const corners = (shape: Shape): [number, number][] => {
+  if (shape === 'square') return [[45, 45], [155, 45], [155, 155], [45, 155]]
+  const sides = { triangle: 3, pentagon: 5, hexagon: 6 }[shape as 'triangle' | 'pentagon' | 'hexagon']
+  return polygon(sides, sides === 3 ? 78 : 70).split(' ')
+    .map(p => p.split(',').map(Number) as [number, number])
+    .map(([x, y]) => [x, sides === 3 ? y + 12 : y])
+}
+
+/** A shape whose corners are tapped one by one and numbered. */
+export function TapShape({ shape, rotate, tapped, active, onTap }: Tappable & { shape: Shape; rotate: number }) {
+  return (
+    <svg className="shape" viewBox="0 0 200 200">
+      <g transform={`rotate(${rotate} 100 100)`}>
+        {SHAPE_SVG[shape]}
+        {corners(shape).map(([x, y], i) => i < tapped
+          ? <g key={i}><circle className="corner on" cx={x} cy={y} r="13" /><text className="corner-n" x={x} y={y + 5} transform={`rotate(${-rotate} ${x} ${y})`}>{i + 1}</text></g>
+          : <circle key={i} className={`corner${active ? ' tap' : ''}`} cx={x} cy={y} r="13" onClick={active ? onTap : undefined} />)}
+      </g>
+    </svg>
+  )
+}
+
+/** The shape with its fold line; once folded, the mirror image is drawn over it. */
+export function FoldVisual({ shape, line, folded, active, onTap, label }: {
+  shape: SymShape; line: 'v' | 'h'; folded: boolean; active: boolean; onTap: () => void; label: string
+}) {
+  const coords: [number, number, number, number] = line === 'v' ? [100, 12, 100, 188] : [12, 100, 188, 100]
+  const mirror = line === 'v' ? 'translate(200 0) scale(-1 1)' : 'translate(0 200) scale(1 -1)'
+  return (
+    <div className="fold">
+      <svg className="shape" viewBox="0 0 200 200">
+        {SYM_SVG[shape]}
+        {folded && <g className="ghost" transform={mirror}>{SYM_SVG[shape]}</g>}
+        <line className="axis" x1={coords[0]} y1={coords[1]} x2={coords[2]} y2={coords[3]} />
+      </svg>
+      {active && <button className="btn tap" onClick={onTap}>{label}</button>}
+    </div>
+  )
+}
+
+/** Rows (or groups) of the same size; tapping counts one whole row at a time. */
+export function TapGroups({ groups, size, emoji, layout, tapped, active, onTap }: Tappable & {
+  groups: number; size: number; emoji: string; layout: 'rows' | 'groups'
+}) {
+  return (
+    <div className={`tap-groups ${layout}`}>
+      {Array.from({ length: groups }, (_, g) => {
+        const items = Array.from({ length: size }, (_, i) => <span key={i}>{emoji}</span>)
+        return g < tapped
+          ? <div key={g} className="tgroup counted">{items}<span className="badge">{(g + 1) * size}</span></div>
+          : <button key={g} className="tgroup tap" disabled={!active} onClick={onTap}>{items}</button>
+      })}
+    </div>
+  )
+}
+
+/** Carrots dealt one round at a time: each rabbit gets one per tap on the pile. */
+export function ShareDeal({ groups, each, tapped, active, onTap }: Tappable & { groups: number; each: number }) {
+  const left = (each - tapped) * groups
+  return (
+    <div className="share">
+      <div className="rabbits">
+        {Array.from({ length: groups }, (_, g) => (
+          <div key={g} className="rabbit"><span>🐰</span><div className="pile">{'🥕'.repeat(tapped)}</div></div>
+        ))}
+      </div>
+      {left > 0 && <button className="pile tap" disabled={!active} onClick={onTap}>{'🥕'.repeat(left)}</button>}
+    </div>
+  )
+}
+
+/** Coins, biggest first; only the next coin can be tapped, and each tapped coin shows the running total. */
+export function TapCoins({ coins, tapped, active, onTap }: Tappable & { coins: number[] }) {
+  const totals = coins.map((_, i) => coins.slice(0, i + 1).reduce((sum, v) => sum + v, 0))
+  return (
+    <div className="coins">
+      {coins.map((v, i) => {
+        return i < tapped
+          ? <span key={i} className={`coin c${v} counted`}>{v}<span className="badge">{totals[i]}</span></span>
+          : <button key={i} className={`coin c${v}${i === tapped && active ? ' tap' : ''}`} disabled={!(i === tapped && active)} onClick={onTap}>{v}</button>
+      })}
     </div>
   )
 }
