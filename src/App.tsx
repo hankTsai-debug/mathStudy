@@ -3,6 +3,7 @@ import { starsFor } from './game/logic'
 import { STRINGS } from './i18n'
 import { ISLANDS, isUnlocked, type Island, type Level } from './islands'
 import { Play } from './Play'
+import { setSoundOn } from './sound'
 import { hush, say as speak } from './speech'
 import { loadProgress, saveProgress, type Progress } from './store'
 
@@ -25,6 +26,7 @@ export default function App() {
   const [bubble, setBubble] = useState(t.hiMap)
 
   useEffect(() => saveProgress(progress), [progress])
+  useEffect(() => setSoundOn(progress.sfx), [progress.sfx])
   useEffect(() => { document.documentElement.lang = progress.lang === 'zh' ? 'zh-Hant' : 'en' }, [progress.lang])
 
   const say = useCallback((text: string) => {
@@ -54,9 +56,13 @@ export default function App() {
     if (screen.name === 'island') setBubble(islandIntro(screen.island, STRINGS[lang]))
     setProgress({ ...progress, lang })
   }
-  const toggleVoice = () => {
-    if (progress.voice) hush()
-    setProgress({ ...progress, voice: !progress.voice })
+  // 🔊 voice and effects → 🎵 effects only (wordless) → 🔇 off.
+  const sound = progress.voice ? 'all' : progress.sfx ? 'sfx' : 'off'
+  const toggleSound = () => {
+    hush()
+    if (sound === 'all') setProgress({ ...progress, voice: false, sfx: true })
+    else if (sound === 'sfx') setProgress({ ...progress, voice: false, sfx: false })
+    else setProgress({ ...progress, voice: true, sfx: true })
   }
 
   return (
@@ -64,7 +70,7 @@ export default function App() {
       <header>
         <h1>{t.appTitle}</h1>
         <button className="btn" onClick={toggleLang}>{t.langBtn}</button>
-        <button className="btn" onClick={toggleVoice} aria-label="voice">{progress.voice ? '🔊' : '🔇'}</button>
+        <button className="btn" onClick={toggleSound} aria-label="voice" title={t.soundLabel[sound]}>{{ all: '🔊', sfx: '🎵', off: '🔇' }[sound]}</button>
       </header>
       <main>
         <div className="mascot"><div className="face">🦊</div><div className="bubble">{bubble}</div></div>

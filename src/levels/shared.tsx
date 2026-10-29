@@ -21,12 +21,14 @@ function defaultLabel(v: Answer): ReactNode {
   return m ? <span className="frac"><span>{m[1]}</span><span>{m[2]}</span></span> : v
 }
 
-export function Choices({ values, answer, onCorrect, onWrong, label = defaultLabel }: {
+export function Choices({ values, answer, onCorrect, onWrong, label = defaultLabel, pulse }: {
   values: Answer[]
   answer: Answer
   onCorrect: () => void
-  onWrong: () => void
+  onWrong: (chose: Answer) => void
   label?: (v: Answer) => ReactNode
+  /** A choice to draw attention to (after repeated misses). */
+  pulse?: Answer
 }) {
   const [missed, setMissed] = useState<Answer[]>([])
   const [done, setDone] = useState(false)
@@ -37,11 +39,11 @@ export function Choices({ values, answer, onCorrect, onWrong, label = defaultLab
         return (
           <button
             key={String(v)}
-            className={`btn choice${typeof text === 'string' && text.length > 3 ? ' wordy' : ''}${done && v === answer ? ' ok' : ''}${missed.includes(v) ? ' no' : ''}`}
+            className={`btn choice${typeof text === 'string' && text.length > 3 ? ' wordy' : ''}${done && v === answer ? ' ok' : ''}${missed.includes(v) ? ' no' : ''}${!done && v === pulse ? ' pulse' : ''}`}
             disabled={done || missed.includes(v)}
             onClick={() => {
               if (v === answer) { setDone(true); onCorrect() }
-              else { setMissed(m => [...m, v]); onWrong() }
+              else { setMissed(m => [...m, v]); onWrong(v) }
             }}
           >
             {text}

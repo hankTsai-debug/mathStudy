@@ -64,7 +64,7 @@ export function Guided({ kind, t, prompt, say, onDone }: {
           onWrong={() => prompt(step.hint)}
         />
       )}
-      {finished && <div className="choices"><button className="btn primary" onClick={onDone}>{t.startPractice}</button></div>}
+      {finished && <div className="choices"><button className="btn primary icon" aria-label={t.startPractice} onClick={onDone}>✏️</button></div>}
     </>
   )
 }

@@ -27,10 +27,10 @@ export function Lesson({ kind, t, prompt, onDone }: {
         {steps.map((_, j) => <i key={j} className={j <= i ? 'done' : ''} />)}
       </div>
       <div className="choices">
-        {i > 0 && <button className="btn" onClick={() => setI(i - 1)}>{t.prevStep}</button>}
+        {i > 0 && <button className="btn icon" aria-label={t.prevStep} onClick={() => setI(i - 1)}>◀</button>}
         {last
-          ? <button className="btn primary" onClick={onDone}>{t.tryIt}</button>
-          : <button className="btn primary" onClick={() => setI(i + 1)}>{t.nextStep}</button>}
+          ? <button className="btn primary icon" aria-label={t.tryIt} onClick={onDone}>🙋</button>
+          : <button className="btn primary icon" aria-label={t.nextStep} onClick={() => setI(i + 1)}>▶</button>}
       </div>
     </>
   )

@@ -2,14 +2,14 @@ import { useMemo, useRef, useState, type ComponentType } from 'react'
 import { ROUNDS, pick } from './game/logic'
 import type { Strings } from './i18n'
 import type { Level, LevelKind } from './islands'
+import { AnimLesson } from './levels/AnimLesson'
+import { ANIM_LESSONS } from './levels/animLessons'
+import { BayAdd20, BayMakeTen, BayTeen } from './levels/BayLevels'
 import { CountLevel } from './levels/CountLevel'
 import { FlashLevel } from './levels/FlashLevel'
 import { LineLevel } from './levels/LineLevel'
-import { MakeTenLevel } from './levels/MakeTenLevel'
-import { TeenLevel } from './levels/TeenLevel'
 import { QuizLevel } from './levels/QuizLevel'
 import { useLater } from './levels/hooks'
-import { GUIDES } from './levels/guides'
 import { Guided } from './levels/Guided'
 import { Lesson } from './levels/Lesson'
 import type { QuizKind } from './levels/quizConfig'
@@ -19,8 +19,10 @@ const CUSTOM: Partial<Record<LevelKind, ComponentType<LevelProps>>> = {
   count: CountLevel,
   line: LineLevel,
   flash: FlashLevel,
-  makeTen: MakeTenLevel,
-  teen: TeenLevel,
+  // 十的海灣: wordless feedback (see BayLevels).
+  makeTen: BayMakeTen,
+  teen: BayTeen,
+  add20: BayAdd20,
 }
 
 const NEXT_ROUND_MS = 1800
@@ -72,9 +74,9 @@ export function Play({ level, firstVisit, t, prompt, say, onExit, onDone }: {
             <button className="btn" onClick={() => setPhase('learn')} aria-label="lesson">📖</button>
           </>}
       </div>
-      {phase === 'learn' && (
-        <Lesson kind={level.kind} t={t} prompt={prompt} onDone={() => setPhase(GUIDES[level.kind] ? 'guide' : 'practice')} />
-      )}
+      {phase === 'learn' && (ANIM_LESSONS[level.kind]
+        ? <AnimLesson kind={level.kind} beats={ANIM_LESSONS[level.kind]!} t={t} prompt={prompt} onDone={() => setPhase('guide')} />
+        : <Lesson kind={level.kind} t={t} prompt={prompt} onDone={() => setPhase('guide')} />)}
       {phase === 'guide' && <Guided kind={level.kind} t={t} prompt={prompt} say={say} onDone={() => setPhase('practice')} />}
       {phase === 'practice' && (Custom
         ? <Custom key={round} round={round} ctx={ctx} />

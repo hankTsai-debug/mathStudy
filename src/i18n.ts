@@ -153,6 +153,8 @@ const zh = {
   nextStep: '下一步',
   prevStep: '上一步',
   tryIt: '換你試試！',
+  replay: '再看一次',
+  soundLabel: { all: '聲音：語音和音效', sfx: '聲音：只有音效', off: '聲音：關閉' },
   /** One narrated line per lesson step, keyed by level kind (see levels/lessons.tsx; lessons.test.ts checks they match). */
   teach: {
     count: [
@@ -687,6 +689,8 @@ const en: Strings = {
   nextStep: 'Next',
   prevStep: 'Back',
   tryIt: 'Your turn!',
+  replay: 'Watch again',
+  soundLabel: { all: 'Sound: voice and effects', sfx: 'Sound: effects only', off: 'Sound: off' },
   teach: {
     count: [
       'When you count, touch each thing once: don\'t skip any, and don\'t count any twice.',

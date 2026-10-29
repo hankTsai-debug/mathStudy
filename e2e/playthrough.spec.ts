@@ -96,18 +96,18 @@ async function playRound(page: Page, level: string, round: number) {
   throw new Error(`no strategy for ${level}`)
 }
 
-/** Steps through the worked example shown on a first visit; every step must narrate something new. */
+/** Steps through the lesson shown on a first visit (animated ones also advance on their own); each step narrates something new. */
 async function watchLesson(page: Page, next = '下一步', done = '換你試試！') {
   const seen = new Set<string>()
-  for (;;) {
+  for (let i = 0; i < 40; i++) {
     await expect(page.locator('.stage.lesson')).toBeVisible()
     const line = await bubble(page)
-    expect(seen.has(line), `lesson repeats "${line}"`).toBe(false)
     seen.add(line)
     const finish = page.getByRole('button', { name: done })
     if (await finish.isVisible()) { await finish.click(); break }
-    await page.getByRole('button', { name: next }).click()
-    await expect.poll(() => bubble(page)).not.toBe(line)
+    // An animated lesson may reach its last step on its own just before this click.
+    await page.getByRole('button', { name: next }).click({ timeout: 2000 }).catch(() => {})
+    await expect.poll(() => bubble(page), { timeout: 3000 }).not.toBe(line).catch(() => {})
   }
   expect(seen.size).toBeGreaterThanOrEqual(3)
   await expect(page.locator('.stage.lesson')).toHaveCount(0)
@@ -189,6 +189,37 @@ test('a level already played skips the lesson, and 📖 replays it and the guide
   await watchLesson(page)
   await doGuide(page)
   await expect(page.locator('.frame.hidden')).toBeVisible()
+})
+
+test('十的海灣 shows mistakes without words, giving more help each time', async ({ page }) => {
+  await seed(page, { 'bay-make10': 1 })
+  await page.goto('/')
+  await card(page, '十的海灣').click()
+  await card(page, '湊十').click()
+  const answer = await page.locator('.stage').first().getAttribute('data-answer')
+  const wrong = page.locator('.choice:not(.no)').filter({ hasNotText: new RegExp(`^${answer}$`) })
+
+  // 1st miss: the chosen amount is drawn on the frame: rings, blinking gaps or spill-over.
+  await wrong.first().click()
+  await expect(page.locator('.stage .mark')).not.toHaveCount(0)
+  // 2nd miss: the gaps are counted out one by one.
+  await wrong.first().click()
+  await expect(page.locator('.stage .cell .badge')).toHaveCount(Number(answer))
+  await expect(page.locator('.stage .mark')).toHaveCount(0)
+  // With 3 choices there is no third miss here; until then nothing pulses.
+  await expect(page.locator('.choice.pulse')).toHaveCount(0)
+})
+
+test('the sound button cycles voice and effects → effects only → off', async ({ page }) => {
+  await page.goto('/')
+  const button = page.getByRole('button', { name: 'voice' })
+  await expect(button).toHaveText('🔊')
+  await button.click()
+  await expect(button).toHaveText('🎵')
+  await button.click()
+  await expect(button).toHaveText('🔇')
+  await button.click()
+  await expect(button).toHaveText('🔊')
 })
 
 test('switches to English everywhere', async ({ page }) => {

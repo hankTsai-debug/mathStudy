@@ -3,6 +3,8 @@ import type { Lang } from './i18n'
 export interface Progress {
   lang: Lang
   voice: boolean
+  /** Sound effects (counting notes, chimes); on even when the voice is off, for wordless play. */
+  sfx: boolean
   /** Best stars per level id. */
   stars: Record<string, number>
 }
@@ -10,7 +12,7 @@ export interface Progress {
 const KEY = 'math-study:v1'
 
 export function loadProgress(): Progress {
-  const fallback: Progress = { lang: 'zh', voice: true, stars: {} }
+  const fallback: Progress = { lang: 'zh', voice: true, sfx: true, stars: {} }
   try {
     const saved = JSON.parse(localStorage.getItem(KEY) ?? 'null') as Partial<Progress> | null
     if (saved) return { ...fallback, ...saved, stars: saved.stars ?? {} }

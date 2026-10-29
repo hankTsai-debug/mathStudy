@@ -355,25 +355,67 @@ export function NumberLine({ frog, trail = [] }: { frog: number; trail?: number[
   )
 }
 
-/** One ten-frame cell in a guided problem: a red (a) or blue (b) dot, a count badge, and whether it can be tapped now. */
-export interface FrameCell { dot?: 'a' | 'b'; badge?: string; tap?: boolean }
+/** One ten-frame cell in an animated or guided picture. */
+export interface FrameCell {
+  /** A red (a: already there) or blue (b: added) dot. */
+  dot?: 'a' | 'b'
+  badge?: string
+  tap?: boolean
+  /** How the dot appears or goes, starting `delay` ms in: pop in, fly in from below, fly out, or crossed out. */
+  anim?: 'pop' | 'arrive' | 'leave' | 'gone'
+  delay?: number
+  /** Crossed out (to be taken away); stays crossed while it leaves. */
+  crossed?: boolean
+  /** When the badge pops in, in ms. */
+  badgeDelay?: number
+  /** Wordless feedback: ring = "you counted this", over = counted past what is there, miss = "you left this out". */
+  mark?: 'ring' | 'over' | 'miss'
+}
 
-/** Ten-frames for a guided problem: tappable cells are buttons, tapped dots carry their count. */
-export function GuideFrames({ cells, onTap }: { cells: FrameCell[]; onTap: () => void }) {
+/**
+ * Ten-frames for animated lessons, guided problems and wordless feedback.
+ * Tappable cells are buttons, and a pointing hand shows the first one.
+ * `glow` lists frames that light up (a ten is complete) after `glowDelay` ms;
+ * `labels` names a frame ("10"); `overflow` draws rings that don't fit in the frame.
+ */
+export function GuideFrames({ cells, onTap, glow = [], glowDelay = 0, labels = [], overflow = 0 }: {
+  cells: FrameCell[]
+  onTap?: () => void
+  glow?: number[]
+  glowDelay?: number
+  labels?: (string | undefined)[]
+  overflow?: number
+}) {
+  const firstTap = cells.findIndex(c => c.tap)
   return (
     <div className="frames">
       {Array.from({ length: cells.length / 10 }, (_, f) => (
-        <div className="frame" key={f}>
-          {cells.slice(f * 10, f * 10 + 10).map((c, j) => {
-            const i = f * 10 + j
-            const dot = c.dot && <i className={`dot${c.dot === 'b' ? ' extra' : ''}`} />
-            const badge = c.badge && <span className="badge">{c.badge}</span>
-            return c.tap
-              ? <button key={i} className="cell tap" onClick={onTap} aria-label={`cell ${i}`}>{dot}</button>
-              : <div key={i} className="cell">{dot}{badge}</div>
-          })}
+        <div className="frame-row" key={f}>
+          <div className={`frame${glow.includes(f) ? ' glow' : ''}`} style={glow.includes(f) ? { animationDelay: `${glowDelay}ms` } : undefined}>
+            {cells.slice(f * 10, f * 10 + 10).map((c, j) => {
+              const i = f * 10 + j
+              const dot = c.dot && (
+                <i
+                  className={`dot${c.dot === 'b' ? ' extra' : ''}${c.crossed ? ' crossed' : ''}${c.anim ? ` ${c.anim}` : ''}`}
+                  style={c.delay ? { animationDelay: `${c.delay}ms` } : undefined}
+                />
+              )
+              const badge = c.badge && (
+                <span className="badge" style={c.badgeDelay ? { animationDelay: `${c.badgeDelay}ms` } : undefined}>{c.badge}</span>
+              )
+              const mark = c.mark && <span className={`mark ${c.mark}`} />
+              return c.tap
+                ? <button key={i} className="cell tap" onClick={onTap} aria-label={`cell ${i}`}>{dot}{i === firstTap && <span className="hand">👆</span>}</button>
+                : <div key={i} className="cell">{dot}{badge}{mark}</div>
+            })}
+          </div>
+          {/* Every row keeps the label's space so labelled and unlabelled frames line up. */}
+          {labels.length > 0 && <span className="frame-label" style={{ animationDelay: `${glowDelay}ms` }}>{labels[f]}</span>}
         </div>
       ))}
+      {overflow > 0 && (
+        <div className="overflow">{Array.from({ length: overflow }, (_, i) => <span key={i} className="mark over" />)}</div>
+      )}
     </div>
   )
 }

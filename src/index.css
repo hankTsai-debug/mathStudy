@@ -238,3 +238,38 @@ button.pile { background: none; font-size: 22px; padding: 6px; }
 .tgroup.counted { border-color: var(--good); background: #eaf8ef; }
 .coin { position: relative; }
 .coin .badge { top: -10px; right: -10px; }
+
+/* Wordless teaching: motion, marks and the pointing hand */
+.frame-row { display: flex; align-items: center; gap: 8px; }
+.frame-row .frame { flex: 1; }
+.frame-label { min-width: 40px; text-align: center; font-size: 26px; font-weight: 800; color: var(--dot); animation: pop-in .4s backwards; }
+.dot.pop { animation: pop-in .35s backwards; }
+.dot.arrive { animation: arrive .5s backwards; }
+.dot.leave { animation: leave .5s forwards; }
+.dot.gone { animation: cross .4s backwards; }
+@keyframes pop-in { from { transform: scale(0); } 70% { transform: scale(1.2); } }
+@keyframes arrive { from { transform: translateY(120px) scale(.6); opacity: 0; } }
+@keyframes leave { to { transform: translateY(-60px) scale(.4); opacity: 0; } }
+@keyframes cross { from { opacity: 1; } }
+.cell .badge { animation: pop-in .35s backwards; }
+.frame.glow { animation: glow 1.2s backwards; }
+@keyframes glow { 0% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0); } 30% { box-shadow: 0 0 0 8px rgba(245, 158, 11, .7); } 100% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0); } }
+.mark { position: absolute; inset: 6%; border-radius: 50%; pointer-events: none; }
+.mark.ring { border: 4px solid var(--good); animation: pop-in .3s backwards; }
+.mark.over { border: 4px dashed var(--dot); animation: shake .5s 2; }
+.mark.miss { border: 4px dashed var(--accent); animation: blink .6s 4; }
+.overflow { display: flex; justify-content: center; gap: 6px; }
+.overflow .mark.over { position: relative; inset: auto; width: 40px; height: 40px; display: block; }
+@keyframes shake { 25% { transform: translateX(-4px); } 75% { transform: translateX(4px); } }
+@keyframes blink { 50% { opacity: .1; } }
+.hand { position: absolute; bottom: -18px; right: -6px; font-size: 26px; pointer-events: none; animation: bob 1s ease-in-out infinite; z-index: 2; }
+@keyframes bob { 50% { transform: translateY(-8px); } }
+.btn.pulse { animation: pulse-btn 1s ease-in-out infinite; box-shadow: 0 0 0 4px var(--accent); }
+@keyframes pulse-btn { 50% { transform: scale(1.1); } }
+.btn.icon { font-size: 26px; min-width: 64px; }
+.eq-a { color: var(--dot); }
+.eq-b { color: var(--dot-extra); }
+.stage.quiz.bay { flex-direction: column; gap: 10px; }
+.stage.quiz.bay > .frames { width: 100%; }
+.dot.crossed { opacity: .35; position: relative; }
+.dot.crossed::after { content: '✕'; position: absolute; inset: 0; display: grid; place-items: center; color: #24361f; font-style: normal; font-size: 20px; }
