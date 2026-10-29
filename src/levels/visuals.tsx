@@ -1,6 +1,7 @@
 // One visual per choice-based level. Each receives its round's data and whether the round
 // is solved, so it can reveal the worked answer (e.g. carrots handed out) after a correct choice.
 import type { ReactNode } from 'react'
+import type { GuideCell } from './guides'
 import type {
   Add20, Area, ArrayQ, Balance, Blocks, Change, Clock, Coins, Column, Decimal, DigitValue, FracEqual, Fraction, Legs,
   Measure, Pattern, Share, Shape, ShapeName, Symmetry, SymShape, Times,
@@ -351,6 +352,26 @@ export function NumberLine({ frog, trail = [] }: { frog: number; trail?: number[
         </span>
       ))}
       <div className="frog" style={{ left: `${((frog + 0.5) / 11) * 100}%` }}>🐸</div>
+    </div>
+  )
+}
+
+/** Ten-frames for a guided problem: tappable cells are buttons, tapped dots carry their count. */
+export function GuideFrames({ cells, onTap }: { cells: GuideCell[]; onTap: (i: number) => void }) {
+  return (
+    <div className="frames">
+      {Array.from({ length: cells.length / 10 }, (_, f) => (
+        <div className="frame" key={f}>
+          {cells.slice(f * 10, f * 10 + 10).map((c, j) => {
+            const i = f * 10 + j
+            const dot = c.dot && <i className={`dot${c.dot === 'b' ? ' extra' : ''}`} />
+            const badge = c.badge && <span className="badge">{c.badge}</span>
+            return c.tap
+              ? <button key={i} className="cell tap" onClick={() => onTap(i)} aria-label={`cell ${i}`}>{dot}</button>
+              : <div key={i} className="cell">{dot}{badge}</div>
+          })}
+        </div>
+      ))}
     </div>
   )
 }

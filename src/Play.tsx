@@ -9,6 +9,8 @@ import { MakeTenLevel } from './levels/MakeTenLevel'
 import { TeenLevel } from './levels/TeenLevel'
 import { QuizLevel } from './levels/QuizLevel'
 import { useLater } from './levels/hooks'
+import { GUIDES } from './levels/guides'
+import { Guided } from './levels/Guided'
 import { Lesson } from './levels/Lesson'
 import type { QuizKind } from './levels/quizConfig'
 import type { LevelContext, LevelProps } from './levels/shared'
@@ -23,7 +25,10 @@ const CUSTOM: Partial<Record<LevelKind, ComponentType<LevelProps>>> = {
 
 const NEXT_ROUND_MS = 1800
 
-/** Teaches the level (first visit, or on request), then runs ROUNDS rounds and reports how many were right on the first try. */
+/**
+ * Teaches the level (first visit, or on request): a worked example, then one problem done together
+ * where the level has one. Then runs ROUNDS rounds and reports how many were right on the first try.
+ */
 export function Play({ level, firstVisit, t, prompt, say, onExit, onDone }: {
   level: Level
   firstVisit: boolean
@@ -34,7 +39,7 @@ export function Play({ level, firstVisit, t, prompt, say, onExit, onDone }: {
   onDone: (firstTry: number) => void
 }) {
   const [round, setRound] = useState(0)
-  const [learning, setLearning] = useState(firstVisit)
+  const [phase, setPhase] = useState<'learn' | 'guide' | 'practice'>(firstVisit ? 'learn' : 'practice')
   const tries = useRef(0)
   const firstTry = useRef(0)
   const later = useLater()
@@ -58,20 +63,22 @@ export function Play({ level, firstVisit, t, prompt, say, onExit, onDone }: {
     <section>
       <div className="topbar">
         <button className="btn" onClick={onExit} aria-label="back">←</button>
-        {learning
-          ? <h2>{t.learnTitle}</h2>
+        {phase !== 'practice'
+          ? <h2>{phase === 'learn' ? t.learnTitle : t.guideTitle}</h2>
           : <>
             <div className="progress">
               {Array.from({ length: ROUNDS }, (_, i) => <i key={i} className={i < round ? 'done' : ''} />)}
             </div>
-            <button className="btn" onClick={() => setLearning(true)} aria-label="lesson">📖</button>
+            <button className="btn" onClick={() => setPhase('learn')} aria-label="lesson">📖</button>
           </>}
       </div>
-      {learning
-        ? <Lesson kind={level.kind} t={t} prompt={prompt} onDone={() => setLearning(false)} />
-        : Custom
+      {phase === 'learn' && (
+        <Lesson kind={level.kind} t={t} prompt={prompt} onDone={() => setPhase(GUIDES[level.kind] ? 'guide' : 'practice')} />
+      )}
+      {phase === 'guide' && <Guided kind={level.kind} t={t} prompt={prompt} say={say} onDone={() => setPhase('practice')} />}
+      {phase === 'practice' && (Custom
         ? <Custom key={round} round={round} ctx={ctx} />
-        : <QuizLevel key={round} kind={level.kind as QuizKind} round={round} ctx={ctx} />}
+        : <QuizLevel key={round} kind={level.kind as QuizKind} round={round} ctx={ctx} />)}
     </section>
   )
 }

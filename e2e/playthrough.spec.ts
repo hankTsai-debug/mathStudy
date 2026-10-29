@@ -113,10 +113,29 @@ async function watchLesson(page: Page, next = '下一步', done = '換你試試�
   await expect(page.locator('.stage.lesson')).toHaveCount(0)
 }
 
+/** Plays the "do one together" problem: tap the offered cells, answer each question (one wrong first, which must hint). */
+async function doGuide(page: Page) {
+  await expect(page.getByRole('heading', { name: '🤝 一起做' })).toBeVisible()
+  let wrong = true
+  for (let i = 0; i < 200; i++) {
+    const start = page.getByRole('button', { name: '開始練習！' })
+    if (await start.isVisible()) { await start.click(); return }
+    const cell = page.locator('.cell.tap').first()
+    if (await cell.isVisible()) { await cell.click(); continue }
+    const value = await page.locator('.stage').first().getAttribute('data-answer')
+    if (value !== null && await page.locator('.choice.ok').count() === 0) { await answer(page, value, wrong); wrong = false; continue }
+    await page.waitForTimeout(100)
+  }
+  throw new Error('guide never finished')
+}
+
+const GUIDED = new Set(['湊十', '十和幾', '開船加減'])
+
 async function playLevel(page: Page, island: string, level: string) {
   await card(page, island).click()
   await card(page, level).click()
   await watchLesson(page)
+  if (GUIDED.has(level)) await doGuide(page)
   for (let round = 0; round < 5; round++) {
     await expect(page.locator('.progress i.done')).toHaveCount(round, { timeout: 15_000 })
     await expect(page.locator('.choice.ok')).toHaveCount(0)
