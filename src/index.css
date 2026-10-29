@@ -201,3 +201,10 @@ h2 { font-size: 20px; margin: 0; }
 .legs { display: flex; flex-direction: column; align-items: center; gap: 16px; }
 .legs .counts { display: flex; gap: 24px; font-size: 30px; font-weight: 700; }
 .legs .animals { font-size: 34px; text-align: center; max-width: 420px; }
+
+/* Lessons */
+.stage.lesson { flex-direction: column; gap: 12px; }
+.stage.lesson .equation { font-size: 26px; font-weight: 700; }
+.progress.steps { justify-content: center; margin: 10px 0; }
+.pad.trail .lily { outline: 3px solid var(--accent); }
+.stage.lesson > .line, .stage.lesson > .field, .stage.lesson > .frames { width: 100%; }

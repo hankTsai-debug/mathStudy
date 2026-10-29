@@ -324,3 +324,33 @@ export function LegsVisual({ data: { heads, legs, rabbits }, solved }: VisualPro
     </div>
   )
 }
+
+/* ---------- lesson-only pictures ---------- */
+
+/** Apples with the first `counted` numbered, as a child would tap them. */
+export function Apples({ n, counted }: { n: number; counted: number }) {
+  return (
+    <div className="field">
+      {Array.from({ length: n }, (_, i) => (
+        <span key={i} className={`item${i < counted ? ' tapped' : ''}`}>
+          🍎{i < counted && <span className="badge">{i + 1}</span>}
+        </span>
+      ))}
+    </div>
+  )
+}
+
+/** The 0–10 lily-pad line with the frog on `frog`; pads in `trail` are marked as hopped over. */
+export function NumberLine({ frog, trail = [] }: { frog: number; trail?: number[] }) {
+  return (
+    <div className="line">
+      {Array.from({ length: 11 }, (_, i) => (
+        <span key={i} className={`pad${trail.includes(i) ? ' trail' : ''}`}>
+          <span className="lily" />
+          <b>{i}</b>
+        </span>
+      ))}
+      <div className="frog" style={{ left: `${((frog + 0.5) / 11) * 100}%` }}>🐸</div>
+    </div>
+  )
+}

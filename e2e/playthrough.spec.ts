@@ -69,12 +69,14 @@ async function playRound(page: Page, level: string, round: number) {
     return answer(page, n, wrong)
   }
   if (level === '青蛙跳數線') {
-    await expect(page.locator('.bubble')).toHaveText(/跳到|往前跳/) // the round's prompt, not last round's praise
+    // The round's own prompt, not last round's praise or the lesson's closing line.
+    await expect(page.locator('.bubble')).toHaveText(/^(幫青蛙跳到|青蛙在 \d+，往前跳)/)
     const nums = (await bubble(page)).match(/\d+/g)!.map(Number)
     const target = nums.length === 1 ? nums[0] : nums[0] + nums[1]
     if (wrong) {
       await page.locator('.pad').nth(target === 10 ? 9 : target + 1).click()
-      await expect.poll(() => bubble(page)).toMatch(/跳過頭|還不夠遠/)
+      // Hopping up to 9 pads at 550 ms each can take longer than the default 5 s.
+      await expect.poll(() => bubble(page), { timeout: 15_000 }).toMatch(/跳過頭|還不夠遠/)
       // The frog hops back to the start before the next try is accepted.
       await page.waitForTimeout(1800 + 550 * 12)
     }
@@ -94,9 +96,27 @@ async function playRound(page: Page, level: string, round: number) {
   throw new Error(`no strategy for ${level}`)
 }
 
+/** Steps through the worked example shown on a first visit; every step must narrate something new. */
+async function watchLesson(page: Page, next = '下一步', done = '換你試試！') {
+  const seen = new Set<string>()
+  for (;;) {
+    await expect(page.locator('.stage.lesson')).toBeVisible()
+    const line = await bubble(page)
+    expect(seen.has(line), `lesson repeats "${line}"`).toBe(false)
+    seen.add(line)
+    const finish = page.getByRole('button', { name: done })
+    if (await finish.isVisible()) { await finish.click(); break }
+    await page.getByRole('button', { name: next }).click()
+    await expect.poll(() => bubble(page)).not.toBe(line)
+  }
+  expect(seen.size).toBeGreaterThanOrEqual(3)
+  await expect(page.locator('.stage.lesson')).toHaveCount(0)
+}
+
 async function playLevel(page: Page, island: string, level: string) {
   await card(page, island).click()
   await card(page, level).click()
+  await watchLesson(page)
   for (let round = 0; round < 5; round++) {
     await expect(page.locator('.progress i.done')).toHaveCount(round, { timeout: 15_000 })
     await expect(page.locator('.choice.ok')).toHaveCount(0)
@@ -140,6 +160,17 @@ test('islands unlock along the map', async ({ page }) => {
   expect(await locked()).toEqual(['位值山谷', '乘法農場', '時間錢幣市集', '分數廚房', '大數港口'])
 })
 
+test('a level already played skips the lesson, and 📖 replays it', async ({ page }) => {
+  await seed(page, { 'forest-flash': 2 })
+  await page.goto('/')
+  await card(page, '數數森林').click()
+  await card(page, '十格框快看').click()
+  await expect(page.locator('.frame.hidden')).toBeVisible()
+  await page.getByRole('button', { name: 'lesson' }).click()
+  await watchLesson(page)
+  await expect(page.locator('.frame.hidden')).toBeVisible()
+})
+
 test('switches to English everywhere', async ({ page }) => {
   await seed(page)
   await page.goto('/?all')
@@ -148,5 +179,7 @@ test('switches to English everywhere', async ({ page }) => {
   await expect(page.locator('html')).toHaveAttribute('lang', 'en')
   await card(page, 'Fraction Kitchen').click()
   await card(page, 'Pizza Slices').click()
+  await expect(page.locator('.bubble')).toHaveText('Cut the pizza into 4 equal slices.')
+  await watchLesson(page, 'Next', 'Your turn!')
   await expect(page.locator('.bubble')).toHaveText('What fraction is shaded?')
 })

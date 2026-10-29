@@ -110,6 +110,7 @@ export default function App() {
           <Play
             key={screen.run}
             level={screen.level}
+            firstVisit={!progress.stars[screen.level.id]}
             t={t}
             prompt={prompt}
             say={say}
