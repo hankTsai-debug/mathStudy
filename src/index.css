@@ -49,6 +49,7 @@ h2 { font-size: 20px; margin: 0; }
 .card .ico { font-size: 40px; }
 .card .name { font-size: 18px; font-weight: 700; }
 .card .desc { font-size: 14px; opacity: .75; }
+.card .why, .stage .why { font-size: 14px; color: #b45309; margin-top: 4px; }
 .card .stars { margin-left: auto; font-size: 16px; white-space: nowrap; }
 .note { font-size: 13px; opacity: .6; text-align: center; margin-top: 20px; }
 

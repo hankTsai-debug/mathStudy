@@ -12,8 +12,9 @@ type Screen =
   | { name: 'play'; island: Island; level: Level; run: number }
   | { name: 'result'; island: Island; level: Level; run: number; firstTry: number; stars: number }
 
-// `?all` opens every island, for testing and demos.
-const UNLOCK_ALL = new URLSearchParams(location.search).has('all')
+// Dev builds open every island (`?locked` restores the unlock rule); `?all` does the same in production demos.
+const params = new URLSearchParams(location.search)
+const UNLOCK_ALL = import.meta.env.DEV ? !params.has('locked') : params.has('all')
 
 const starText = (n: number) => '⭐'.repeat(n) + '☆'.repeat(3 - n)
 
@@ -32,7 +33,9 @@ export default function App() {
   const prompt = useCallback((text: string) => { setBubble(text); say(text) }, [say])
 
   const goMap = () => { hush(); setBubble(t.hiMap); setScreen({ name: 'map' }) }
-  const goIsland = (island: Island) => { hush(); setBubble(t.hiIsland); setScreen({ name: 'island', island }) }
+  // Each island opens with the real problem its skills solve.
+  const islandIntro = (island: Island, s = t) => `${s.islands[island.id].story} ${s.hiIsland}`
+  const goIsland = (island: Island) => { hush(); prompt(islandIntro(island)); setScreen({ name: 'island', island }) }
   const runs = useRef(0)
   const start = (island: Island, level: Level) => setScreen({ name: 'play', island, level, run: ++runs.current })
 
@@ -48,7 +51,7 @@ export default function App() {
   const toggleLang = () => {
     const lang = progress.lang === 'zh' ? 'en' : 'zh'
     if (screen.name === 'map') setBubble(STRINGS[lang].hiMap)
-    if (screen.name === 'island') setBubble(STRINGS[lang].hiIsland)
+    if (screen.name === 'island') setBubble(islandIntro(screen.island, STRINGS[lang]))
     setProgress({ ...progress, lang })
   }
   const toggleVoice = () => {
@@ -96,7 +99,7 @@ export default function App() {
             {screen.island.levels.map(level => (
               <button key={level.id} className="card" onClick={() => start(screen.island, level)}>
                 <span className="ico">{level.icon}</span>
-                <span><div className="name">{t.levels[level.id].name}</div><div className="desc">{t.levels[level.id].desc}</div></span>
+                <span><div className="name">{t.levels[level.id].name}</div><div className="desc">{t.levels[level.id].desc}</div><div className="why">🎯 {t.levels[level.id].why}</div></span>
                 <span className="stars">{starText(progress.stars[level.id] ?? 0)}</span>
               </button>
             ))}
@@ -119,6 +122,7 @@ export default function App() {
           <section className="stage center">
             <div className="big">{starText(screen.stars)}</div>
             <p>{t.result(screen.firstTry)}</p>
+            <p className="why">🎯 {t.useIt} {t.levels[screen.level.id].why}</p>
             <div className="choices">
               <button className="btn primary" onClick={() => start(screen.island, screen.level)}>{t.again}</button>
               <button className="btn" onClick={() => goIsland(screen.island)}>{t.back}</button>

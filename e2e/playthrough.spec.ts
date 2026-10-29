@@ -124,7 +124,7 @@ for (const [island, levels] of ISLANDS) {
 
 test('islands unlock along the map', async ({ page }) => {
   await seed(page)
-  await page.goto('/')
+  await page.goto('/?locked') // dev builds open everything unless asked not to
   const locked = () => page.locator('.card.locked .name').allInnerTexts()
   expect(await locked()).toEqual(ISLANDS.slice(1).map(([name]) => name))
 

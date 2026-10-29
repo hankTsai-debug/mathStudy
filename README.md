@@ -20,7 +20,9 @@ Proposal (Chinese): https://claude.ai/artifact/7NN5ax9NUK6emES3BsCLTs
 | ⚓ 大數港口 Big Number Port | 分數廚房 | 大數位值 big place values, 面積與周長 area/perimeter, 小數 decimals |
 | 🧩 挑戰島 Challenge Island | 數數森林 | 找規律 patterns, 天平推理 balance, 雞兔同籠 heads and legs |
 
-An island opens once every level on the island it follows has a star. Add `?all` to the URL to open everything.
+An island opens once every level on the island it follows has a star. In development (`npm run dev`) every island is open; add `?locked` to try the unlock rule. In a production build, `?all` opens everything.
+
+Every island starts with a real problem its skills solve (the squirrels must count their nuts for winter; the market needs change checked), and every level says where a child uses it in daily life (🎯), on its card and again on the result screen. Children practise harder when they can see why a skill matters.
 
 Wrong choices are the mistakes children typically make (forgetting to carry, reading the end of a ruler that doesn't start at 0, counting tick marks instead of parts, adding instead of multiplying for equal fractions), so a miss tells you something.
 
