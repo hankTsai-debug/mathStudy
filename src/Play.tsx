@@ -1,6 +1,7 @@
 import { useMemo, useRef, useState, type ComponentType } from 'react'
 import { ROUNDS, pick } from './game/logic'
-import type { Strings } from './i18n'
+import { ADVENTURE } from './adventure'
+import type { Lang, Strings } from './i18n'
 import type { Level, LevelKind } from './islands'
 import { AnimLesson } from './levels/AnimLesson'
 import { ANIM_LESSONS } from './levels/wordless'
@@ -9,6 +10,7 @@ import { CountLevel } from './levels/CountLevel'
 import { FlashLevel } from './levels/FlashLevel'
 import { LineLevel } from './levels/LineLevel'
 import { QuizLevel } from './levels/QuizLevel'
+import { Ponder } from './Ponder'
 import { useLater } from './levels/hooks'
 import { Guided } from './levels/Guided'
 import { Lesson } from './levels/Lesson'
@@ -28,12 +30,13 @@ const CUSTOM: Partial<Record<LevelKind, ComponentType<LevelProps>>> = {
 const NEXT_ROUND_MS = 1800
 
 /**
- * Teaches the level (first visit, or on request): a worked example, then one problem done together
+ * Teaches the level (first visit, or on request): on a first visit a question to think about first, then a worked example, then one problem done together
  * where the level has one. Then runs ROUNDS rounds and reports how many were right on the first try.
  */
-export function Play({ level, firstVisit, t, prompt, say, onExit, onDone }: {
+export function Play({ level, firstVisit, lang, t, prompt, say, onExit, onDone }: {
   level: Level
   firstVisit: boolean
+  lang: Lang
   t: Strings
   prompt: (text: string) => void
   say: (text: string) => void
@@ -41,7 +44,7 @@ export function Play({ level, firstVisit, t, prompt, say, onExit, onDone }: {
   onDone: (firstTry: number) => void
 }) {
   const [round, setRound] = useState(0)
-  const [phase, setPhase] = useState<'learn' | 'guide' | 'practice'>(firstVisit ? 'learn' : 'practice')
+  const [phase, setPhase] = useState<'ponder' | 'learn' | 'guide' | 'practice'>(firstVisit ? 'ponder' : 'practice')
   const tries = useRef(0)
   const firstTry = useRef(0)
   const later = useLater()
@@ -66,7 +69,7 @@ export function Play({ level, firstVisit, t, prompt, say, onExit, onDone }: {
       <div className="topbar">
         <button className="btn" onClick={onExit} aria-label="back">←</button>
         {phase !== 'practice'
-          ? <h2>{phase === 'learn' ? t.learnTitle : t.guideTitle}</h2>
+          ? <h2>{{ ponder: ADVENTURE[lang].ponderTitle, learn: t.learnTitle, guide: t.guideTitle }[phase]}</h2>
           : <>
             <div className="progress">
               {Array.from({ length: ROUNDS }, (_, i) => <i key={i} className={i < round ? 'done' : ''} />)}
@@ -74,6 +77,7 @@ export function Play({ level, firstVisit, t, prompt, say, onExit, onDone }: {
             <button className="btn" onClick={() => setPhase('learn')} aria-label="lesson">📖</button>
           </>}
       </div>
+      {phase === 'ponder' && <Ponder level={level.id} lang={lang} prompt={prompt} onDone={() => setPhase('learn')} />}
       {phase === 'learn' && (ANIM_LESSONS[level.kind]
         ? <AnimLesson kind={level.kind} beats={ANIM_LESSONS[level.kind]!} t={t} prompt={prompt} onDone={() => setPhase('guide')} />
         : <Lesson kind={level.kind} t={t} prompt={prompt} onDone={() => setPhase('guide')} />)}

@@ -100,6 +100,12 @@ async function playRound(page: Page, level: string, round: number) {
   throw new Error(`no strategy for ${level}`)
 }
 
+/** Answers the "think first" question on a first visit (any answer is welcome), then goes on to the lesson. */
+async function ponder(page: Page, see = '看示範') {
+  await page.locator('.ponder-choice').first().click()
+  await page.getByRole('button', { name: new RegExp(see) }).click()
+}
+
 /** Steps through the lesson shown on a first visit (animated ones also advance on their own); each step narrates something new. */
 async function watchLesson(page: Page, next = '下一步', done = '換你試試！') {
   const seen = new Set<string>()
@@ -145,6 +151,7 @@ async function openIsland(page: Page, island: string) {
 async function playLevel(page: Page, island: string, level: string) {
   await openIsland(page, island)
   await card(page, level).click()
+  await ponder(page)
   await watchLesson(page)
   await doGuide(page)
   for (let round = 0; round < 5; round++) {
@@ -154,6 +161,8 @@ async function playLevel(page: Page, island: string, level: string) {
   }
   // One wrong answer: 4 of 5 right first time → 2 stars.
   await expect(page.locator('.big')).toHaveText('⭐⭐☆', { timeout: 15_000 })
+  // A level finished for the first time grows the fox and finds a clue.
+  await expect(page.locator('.growth .clue')).toBeVisible()
   await page.getByRole('button', { name: '回去' }).click()
   await expect(card(page, level)).toContainText('⭐⭐☆')
   await page.getByRole('button', { name: 'back' }).click()
@@ -168,6 +177,8 @@ for (const [island, levels] of ISLANDS) {
     await page.goto('/?all')
     for (const level of levels) await playLevel(page, island, level)
     await expect(card(page, island)).toContainText(`⭐ ${levels.length * 2}/${levels.length * 3}`)
+    await expect(page.locator('.fox .powers')).toHaveCount(1)
+    await expect(page.locator('.fox .lv')).toHaveText(`Lv.${levels.length}`)
     expect(errors).toEqual([])
   })
 }
@@ -190,11 +201,16 @@ test('islands unlock along the map', async ({ page }) => {
   expect(await locked()).toEqual(['位值山谷', '乘法農場', '時間錢幣市集', '分數廚房', '大數港口'])
 })
 
-test('a first visit tells the island\'s everyday story, and it can be replayed', async ({ page }) => {
+test('a first visit tells the island\'s story from long ago to today, and it can be replayed', async ({ page }) => {
   await seed(page)
   await page.goto('/')
   await card(page, '數數森林').click()
+  // First how counting was invented, then today's everyday problem.
+  await expect(page.locator('.bubble')).toContainText('還沒有數字')
+  await expect(page.locator('.tag-old')).toHaveText('📜 從前從前')
+  for (let i = 0; i < 2; i++) await page.getByRole('button', { name: '下一步' }).click()
   await expect(page.locator('.bubble')).toHaveText('今天是你的生日派對，來了 5 個好朋友！')
+  await expect(page.locator('.tag-old')).toHaveCount(0)
   for (let i = 0; i < 3; i++) await page.getByRole('button', { name: '下一步' }).click()
   await page.getByRole('button', { name: /出發/ }).click()
   await expect(card(page, '生活故事')).toBeVisible()
@@ -253,6 +269,8 @@ test('switches to English everywhere', async ({ page }) => {
   await expect(page.locator('html')).toHaveAttribute('lang', 'en')
   await openIsland(page, 'Fraction Kitchen')
   await card(page, 'Pizza Slices').click()
+  await expect(page.locator('.bubble')).toHaveText('A pizza cut into 4 equal slices. What do we call one slice?')
+  await ponder(page, 'Watch')
   await expect(page.locator('.bubble')).toHaveText('Cut the pizza into 4 equal slices.')
   await watchLesson(page, 'Next', 'Your turn!')
   await expect(page.getByRole('heading', { name: '🤝 Together' })).toBeVisible()

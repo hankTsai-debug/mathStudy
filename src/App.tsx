@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { ADVENTURE, foxLevel, solvedIslands } from './adventure'
+import { Fox } from './Fox'
 import { starsFor } from './game/logic'
-import { STRINGS } from './i18n'
+import { STRINGS, type Lang } from './i18n'
 import { ISLANDS, isUnlocked, type Island, type Level } from './islands'
 import { Play } from './Play'
 import { setSoundOn } from './sound'
@@ -13,7 +15,10 @@ type Screen =
   | { name: 'island'; island: Island }
   | { name: 'story'; island: Island }
   | { name: 'play'; island: Island; level: Level; run: number }
-  | { name: 'result'; island: Island; level: Level; run: number; firstTry: number; stars: number }
+  | { name: 'result'; island: Island; level: Level; run: number; firstTry: number; stars: number; growth: Growth | null }
+
+/** What a level finished for the first time brings: the fox's new level, a clue, maybe the island's mystery solved. */
+interface Growth { level: number; clue: number; solved: boolean }
 
 // Dev builds open every island (`?locked` restores the unlock rule); `?all` does the same in production demos.
 const params = new URLSearchParams(location.search)
@@ -25,6 +30,7 @@ export default function App() {
   const [progress, setProgress] = useState<Progress>(loadProgress)
   const [screen, setScreen] = useState<Screen>({ name: 'map' })
   const t = STRINGS[progress.lang]
+  const a = ADVENTURE[progress.lang]
   const [bubble, setBubble] = useState(t.hiMap)
 
   useEffect(() => saveProgress(progress), [progress])
@@ -37,8 +43,8 @@ export default function App() {
   const prompt = useCallback((text: string) => { setBubble(text); say(text) }, [say])
 
   const goMap = () => { hush(); setBubble(t.hiMap); setScreen({ name: 'map' }) }
-  // Each island opens with the real problem its skills solve.
-  const islandIntro = (island: Island, s = t) => `${s.islands[island.id].story} ${s.hiIsland}`
+  // Each island opens with its mystery; every level finished finds a clue.
+  const islandIntro = (island: Island, lang = progress.lang) => ADVENTURE[lang].islandHi(ADVENTURE[lang].mystery[island.id].title)
   const goIsland = (island: Island) => { hush(); prompt(islandIntro(island)); setScreen({ name: 'island', island }) }
   // A first visit (no stars yet) opens with the island's everyday story.
   const showStory = (island: Island) => { hush(); setScreen({ name: 'story', island }) }
@@ -51,15 +57,28 @@ export default function App() {
     if (screen.name !== 'play') return
     const { id } = screen.level
     const stars = starsFor(firstTry)
+    const after = { ...progress.stars, [id]: Math.max(progress.stars[id] ?? 0, stars) }
+    const island = screen.island
+    const growth = progress.stars[id] ? null : {
+      level: foxLevel(after),
+      clue: island.levels.indexOf(screen.level),
+      solved: solvedIslands(after).includes(island.id),
+    }
     setProgress(p => ({ ...p, stars: { ...p.stars, [id]: Math.max(p.stars[id] ?? 0, stars) } }))
-    setScreen({ ...screen, name: 'result', firstTry, stars })
-    prompt(t.result(firstTry))
+    setScreen({ ...screen, name: 'result', firstTry, stars, growth })
+    const m = a.mystery[island.id]
+    prompt([
+      t.result(firstTry),
+      growth && a.foxGrew(growth.level),
+      growth && a.newClue(growth.clue + 1) + m.clues[growth.clue],
+      growth?.solved && `${a.solvedTitle} ${m.solved} ${a.newPower(m.power)}`,
+    ].filter(Boolean).join(' '))
   }
 
   const toggleLang = () => {
     const lang = progress.lang === 'zh' ? 'en' : 'zh'
     if (screen.name === 'map') setBubble(STRINGS[lang].hiMap)
-    if (screen.name === 'island') setBubble(islandIntro(screen.island, STRINGS[lang]))
+    if (screen.name === 'island') setBubble(islandIntro(screen.island, lang))
     setProgress({ ...progress, lang })
   }
   // 🔊 voice and effects → 🎵 effects only (wordless) → 🔇 off.
@@ -79,10 +98,14 @@ export default function App() {
         <button className="btn" onClick={toggleSound} aria-label="voice" title={t.soundLabel[sound]}>{{ all: '🔊', sfx: '🎵', off: '🔇' }[sound]}</button>
       </header>
       <main>
-        <div className="mascot"><div className="face">🦊</div><div className="bubble">{bubble}</div></div>
+        <div className="mascot">
+          <Fox stars={progress.stars} grow={screen.name === 'result' && screen.growth !== null} />
+          <div className="bubble">{bubble}</div>
+        </div>
 
         {screen.name === 'map' && (
           <section className="cards">
+            <p className="rank">🦊 {a.ranks[solvedIslands(progress.stars).length]} · Lv.{foxLevel(progress.stars)}</p>
             {ISLANDS.map(island => {
               const open = UNLOCK_ALL || isUnlocked(island, progress.stars)
               const earned = island.levels.reduce((sum, l) => sum + (progress.stars[l.id] ?? 0), 0)
@@ -112,6 +135,7 @@ export default function App() {
               <span className="ico">📖</span>
               <span><div className="name">{t.storyBtn}</div><div className="desc">{t.islands[screen.island.id].scenes[0]}</div></span>
             </button>
+            <Mystery island={screen.island} stars={progress.stars} lang={progress.lang} />
             {screen.island.levels.map(level => (
               <button key={level.id} className="card" onClick={() => start(screen.island, level)}>
                 <span className="ico">{level.icon}</span>
@@ -123,7 +147,7 @@ export default function App() {
         )}
 
         {screen.name === 'story' && (
-          <Story key={screen.island.id} island={screen.island} t={t} prompt={prompt} onDone={() => goIsland(screen.island)} />
+          <Story key={screen.island.id} island={screen.island} lang={progress.lang} t={t} prompt={prompt} onDone={() => goIsland(screen.island)} />
         )}
 
         {screen.name === 'play' && (
@@ -131,6 +155,7 @@ export default function App() {
             key={screen.run}
             level={screen.level}
             firstVisit={!progress.stars[screen.level.id]}
+            lang={progress.lang}
             t={t}
             prompt={prompt}
             say={say}
@@ -144,6 +169,19 @@ export default function App() {
             <div className="big">{starText(screen.stars)}</div>
             <p>{t.result(screen.firstTry)}</p>
             <p className="why">🎯 {t.useIt} {t.levels[screen.level.id].why}</p>
+            {screen.growth && (
+              <div className="growth">
+                <p className="grew">🦊⬆️ {a.foxGrew(screen.growth.level)}</p>
+                <p className="clue">🧩 {a.newClue(screen.growth.clue + 1)}{a.mystery[screen.island.id].clues[screen.growth.clue]}</p>
+                {screen.growth.solved && (
+                  <div className="solved a-pop">
+                    <p><b>{a.solvedTitle}</b> {a.mystery[screen.island.id].solved}</p>
+                    <p>✨ {a.newPower(a.mystery[screen.island.id].power)}</p>
+                    <p>🏅 {a.nowRank(a.ranks[solvedIslands(progress.stars).length])}</p>
+                  </div>
+                )}
+              </div>
+            )}
             <p className="spot">👀 {t.spotIt} {t.levels[screen.level.id].spot}</p>
             <div className="choices">
               <button className="btn primary" onClick={() => start(screen.island, screen.level)}>{t.again}</button>
@@ -153,5 +191,23 @@ export default function App() {
         )}
       </main>
     </>
+  )
+}
+
+/** The island's mystery: a clue for every level with a star, and the answer once all are found. */
+function Mystery({ island, stars, lang }: { island: Island; stars: Record<string, number>; lang: Lang }) {
+  const a = ADVENTURE[lang]
+  const m = a.mystery[island.id]
+  const solved = island.levels.every(l => stars[l.id])
+  return (
+    <div className="mystery">
+      <div className="name">{a.mysteryTitle}：{m.title}</div>
+      <ol>
+        {island.levels.map((l, i) => (
+          <li key={l.id} className={stars[l.id] ? '' : 'hidden'}>{a.clueOf(i + 1)}：{stars[l.id] ? m.clues[i] : a.hidden}</li>
+        ))}
+      </ol>
+      {solved && <p className="solved">{a.solvedTitle} {m.solved} ✨ {m.power}</p>}
+    </div>
   )
 }
