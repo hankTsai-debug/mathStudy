@@ -9,7 +9,8 @@
     "lint": "oxlint",
     "preview": "vite preview",
     "test": "vitest run src",
-    "e2e": "playwright test"
+    "e2e": "playwright test",
+    "gen:voice": "node scripts/gen-voice.mjs"
   },
   "dependencies": {
     "react": "^19.3.1",
@@ -22,6 +23,7 @@
     "@types/react-dom": "^19.3.0",
     "@vitejs/plugin-react": "^6.1.2",
     "oxlint": "^1.89.0",
+    "pinyin-pro": "^3.29.5",
     "typescript": "~7.0.2",
     "vite": "^8.3.5",
     "vitest": "^4.1.12"

@@ -1,3 +1,4 @@
+import { UNLOCK_STARS } from './game/logic'
 import type { Strings } from './i18n'
 import type { QuizKind } from './levels/quizConfig'
 
@@ -85,8 +86,8 @@ export const ISLANDS: Island[] = [
 
 export const islandById = (id: IslandId) => ISLANDS.find(i => i.id === id)!
 
-/** An island opens once every level on its required island has at least one star. */
+/** An island opens once every level on its required island has UNLOCK_STARS stars. */
 export function isUnlocked(island: Island, stars: Record<string, number>): boolean {
   if (!island.requires) return true
-  return islandById(island.requires).levels.every(l => (stars[l.id] ?? 0) > 0)
+  return islandById(island.requires).levels.every(l => (stars[l.id] ?? 0) >= UNLOCK_STARS)
 }

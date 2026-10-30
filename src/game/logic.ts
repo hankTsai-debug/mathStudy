@@ -28,9 +28,27 @@ export function options(answer: number, min: number, max: number, rng: Rng = Mat
   return shuffle([...set], rng)
 }
 
-/** Stars come from rounds answered right on the first try. */
-export function starsFor(firstTry: number): 1 | 2 | 3 {
-  return firstTry >= ROUNDS ? 3 : firstTry >= 3 ? 2 : 1
+/** A level ends after ROUNDS answers right on the first try, or after this many rounds at most. */
+export const MAX_ROUNDS = 8
+
+/** Stars needed on every level of an island to open the islands that follow it. */
+export const UNLOCK_STARS = 2
+
+/** Where a level's practice stands: its difficulty step, the rounds played, and the rounds that took more than one try. */
+export interface Run { step: number; rounds: number; misses: number }
+
+/**
+ * After a round: an answer right on the first try moves up a step; a miss stays on the same step
+ * for another try at that difficulty. Done after ROUNDS steps or MAX_ROUNDS rounds.
+ */
+export function afterRound(run: Run, firstTry: boolean): Run & { done: boolean } {
+  const next = { step: run.step + (firstTry ? 1 : 0), rounds: run.rounds + 1, misses: run.misses + (firstTry ? 0 : 1) }
+  return { ...next, done: next.step >= ROUNDS || next.rounds >= MAX_ROUNDS }
+}
+
+/** Stars come from rounds that needed more than one try: none → 3, up to 2 → 2, more → 1. */
+export function starsFor(misses: number): 1 | 2 | 3 {
+  return misses === 0 ? 3 : misses <= 2 ? 2 : 1
 }
 
 const FRUITS = ['🍎', '🍓', '🍐', '🍊', '🍄'] as const

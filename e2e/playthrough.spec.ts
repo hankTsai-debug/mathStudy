@@ -60,8 +60,8 @@ async function answer(page: Page, value: string | number, wrongFirst: boolean, p
   await expect(page.locator('.choice.ok')).toBeVisible()
 }
 
-async function playRound(page: Page, level: string, round: number) {
-  const wrong = round === 1
+/** Plays one practice round; `done` is how many progress dots will be filled once it is answered. */
+async function playRound(page: Page, level: string, wrong: boolean, done: number) {
   const quizAnswer = await page.locator('.stage').first().getAttribute('data-answer')
   if (quizAnswer !== null) return answer(page, quizAnswer, wrong, true)
 
@@ -84,10 +84,11 @@ async function playRound(page: Page, level: string, round: number) {
       // The frog hops back to the start before the next try is accepted.
       await page.waitForTimeout(1800 + 550 * 12)
     }
-    await page.locator('.pad').nth(target).click()
-    // Wait for the hops to land: the next round, or the result screen after the last one.
-    const advanced = round === 4 ? page.locator('.big') : page.locator('.progress i.done').nth(round)
-    await expect(advanced).toBeVisible({ timeout: 15_000 })
+    const pad = await page.locator('.pad').nth(target).elementHandle()
+    await pad!.click()
+    // Wait for the hops to land and the round to end: its pads go when the next round (or the result) comes.
+    await pad!.waitForElementState('hidden', { timeout: 20_000 })
+    if (done === 5) await expect(page.locator('.big')).toBeVisible({ timeout: 15_000 })
     return
   }
   if (level === '十格框快看') {
@@ -153,16 +154,30 @@ async function playLevel(page: Page, island: string, level: string) {
   await card(page, level).click()
   await ponder(page)
   await watchLesson(page)
+  // Back to the "think first" question, now with its answer.
+  await expect(page.locator('.ponder-choice.answer')).toHaveCount(1)
+  await page.getByRole('button', { name: /一起做/ }).click()
   await doGuide(page)
-  for (let round = 0; round < 5; round++) {
-    await expect(page.locator('.progress i.done')).toHaveCount(round, { timeout: 15_000 })
+  // A miss in the second round repeats that difficulty, so 6 rounds fill the 5 dots.
+  for (let round = 0; round < 6; round++) {
+    const before = round <= 1 ? round : round - 1
+    await expect(page.locator('.progress i.done')).toHaveCount(before, { timeout: 15_000 })
     await expect(page.locator('.choice.ok')).toHaveCount(0)
-    await playRound(page, level, round)
+    await playRound(page, level, round === 1, Math.max(1, round))
   }
-  // One wrong answer: 4 of 5 right first time → 2 stars.
+  // One round needed a second try → 2 stars.
   await expect(page.locator('.big')).toHaveText('⭐⭐☆', { timeout: 15_000 })
-  // A level finished for the first time grows the fox and finds a clue.
+  // A level finished for the first time grows the fox and finds a clue; the last clue asks the child to solve the mystery.
   await expect(page.locator('.growth .clue')).toBeVisible()
+  if (await page.locator('.finale').isVisible()) {
+    // Try each choice in turn until the right one solves it (a wrong one is disabled).
+    const solved = page.locator('.growth .solved')
+    for (let i = 0; i < 3; i++) {
+      await page.locator('.finale .ponder-choice:not([disabled])').first().click()
+      if (await solved.waitFor({ timeout: 1000 }).then(() => true, () => false)) break
+    }
+    await expect(page.locator('.growth .solved')).toBeVisible()
+  }
   await page.getByRole('button', { name: '回去' }).click()
   await expect(card(page, level)).toContainText('⭐⭐☆')
   await page.getByRole('button', { name: 'back' }).click()
@@ -190,13 +205,17 @@ test('islands unlock along the map', async ({ page }) => {
   expect(await locked()).toEqual(ISLANDS.slice(1).map(([name]) => name))
 
   await card(page, '十的海灣').click()
-  await expect(page.locator('.bubble')).toHaveText('先在「數數森林」的每一關都拿到星星，就能解鎖喔！')
+  await expect(page.locator('.bubble')).toHaveText('在「數數森林」的每一關都拿到 ⭐⭐ 兩顆星，就能解鎖喔！')
   await expect(page.locator('h2')).toHaveCount(0)
 
-  // Stars on all of 數數森林 open its three children: 十的海灣, 形狀工坊, 挑戰島.
-  await page.evaluate(key => localStorage.setItem(key, JSON.stringify({
-    lang: 'zh', voice: false, stars: { 'forest-count': 1, 'forest-line': 1, 'forest-flash': 1 },
-  })), KEY)
+  // One star each is not enough; two on all of 數數森林 open its three children: 十的海灣, 形狀工坊, 挑戰島.
+  const setStars = (n: number) => page.evaluate(([key, n]) => localStorage.setItem(key as string, JSON.stringify({
+    lang: 'zh', voice: false, stars: { 'forest-count': n, 'forest-line': 3, 'forest-flash': 2 },
+  })), [KEY, n])
+  await setStars(1)
+  await page.reload()
+  expect(await locked()).toEqual(ISLANDS.slice(1).map(([name]) => name))
+  await setStars(2)
   await page.reload()
   expect(await locked()).toEqual(['位值山谷', '乘法農場', '時間錢幣市集', '分數廚房', '大數港口'])
 })
@@ -211,11 +230,33 @@ test('a first visit tells the island\'s story from long ago to today, and it can
   for (let i = 0; i < 2; i++) await page.getByRole('button', { name: '下一步' }).click()
   await expect(page.locator('.bubble')).toHaveText('今天是你的生日派對，來了 5 個好朋友！')
   await expect(page.locator('.tag-old')).toHaveCount(0)
-  for (let i = 0; i < 3; i++) await page.getByRole('button', { name: '下一步' }).click()
+  for (let i = 0; i < 2; i++) await page.getByRole('button', { name: '下一步' }).click()
+  // The cupcake scene waits for the child to tap each one, counting 1 to 5.
+  await expect(page.getByRole('button', { name: '下一步' })).toHaveCount(0)
+  for (const cake of await page.locator('.story-tap').all()) await cake.click()
+  await expect(page.locator('.story-tap .tag-n')).toHaveText(['1', '2', '3', '4', '5'])
+  await page.getByRole('button', { name: '下一步' }).click()
   await page.getByRole('button', { name: /出發/ }).click()
   await expect(card(page, '生活故事')).toBeVisible()
   await card(page, '生活故事').click()
   await expect(page.locator('.stage.story')).toBeVisible()
+})
+
+test('a round from an earlier island comes back for review, without moving the level on', async ({ page }) => {
+  await seed(page, { 'bay-make10': 2, 'place-blocks': 2 })
+  await page.goto('/')
+  await openIsland(page, '十的海灣')
+  await card(page, '湊十').click()
+  const dataAnswer = () => page.locator('.stage').first().getAttribute('data-answer')
+  for (let round = 0; round < 2; round++) {
+    await expect(page.locator('.progress i.done')).toHaveCount(round, { timeout: 15_000 })
+    await expect(page.locator('.choice.ok')).toHaveCount(0)
+    await answer(page, (await dataAnswer())!, false)
+  }
+  await expect(page.locator('.review-tag')).toHaveText('🔁 複習一下： 積木合體', { timeout: 15_000 })
+  await answer(page, (await dataAnswer())!, false)
+  await expect(page.locator('.review-tag')).toHaveCount(0, { timeout: 15_000 })
+  await expect(page.locator('.progress i.done')).toHaveCount(2)
 })
 
 test('a level already played skips the lesson, and 📖 replays it and the guide', async ({ page }) => {
@@ -273,6 +314,7 @@ test('switches to English everywhere', async ({ page }) => {
   await ponder(page, 'Watch')
   await expect(page.locator('.bubble')).toHaveText('Cut the pizza into 4 equal slices.')
   await watchLesson(page, 'Next', 'Your turn!')
+  await page.getByRole('button', { name: /Together/ }).click()
   await expect(page.getByRole('heading', { name: '🤝 Together' })).toBeVisible()
   await expect(page.locator('.bubble')).toHaveText('How many equal slices is the pizza cut into?')
 })

@@ -35,6 +35,24 @@ export const PONDER_PICS: Record<LevelId, string> = {
   'challenge-legs': '🐔 🐰 ❓ / 🦶 × 10',
 }
 
+/** Which choice (by position) answers each "think first" question; shown after the lesson, never before. */
+export const PONDER_ANSWERS: Record<LevelId, number> = {
+  'forest-count': 1, 'forest-line': 1, 'forest-flash': 1,
+  'bay-make10': 1, 'bay-teen': 0, 'bay-add20': 1,
+  'place-blocks': 0, 'place-digit': 0, 'place-column': 0,
+  'shapes-name': 0, 'shapes-symmetry': 0, 'shapes-measure': 0,
+  'farm-array': 1, 'farm-times': 1, 'farm-share': 1,
+  'market-clock': 1, 'market-coins': 1, 'market-change': 0,
+  'kitchen-name': 1, 'kitchen-line': 0, 'kitchen-equal': 2,
+  'port-place': 1, 'port-area': 1, 'port-decimal': 0,
+  'challenge-pattern': 1, 'challenge-balance': 1, 'challenge-legs': 1,
+}
+
+/** Which choice (by position) solves each island's final puzzle. */
+export const FINALE_ANSWERS: Record<IslandId, number> = {
+  forest: 1, bay: 0, place: 1, shapes: 0, farm: 0, market: 0, kitchen: 2, port: 1, challenge: 1,
+}
+
 /** Pictures for "long, long ago" scenes, played before each island's everyday story. */
 export const ORIGIN_PICS: Record<IslandId, string[]> = {
   forest: ['🦴 / 🏹 🦌 🦌 🦌', '🦴 / | | | | |'],
@@ -53,7 +71,14 @@ export const POWER_ICONS: Record<IslandId, string> = {
   forest: '🔍', bay: '🧭', place: '🗝️', shapes: '📐', farm: '⚡', market: '⌚', kitchen: '🥄', port: '🔭', challenge: '🧠',
 }
 
-interface Mystery { title: string; clues: [string, string, string]; solved: string; power: string }
+interface Mystery {
+  title: string
+  clues: [string, string, string]
+  /** The last step, which the child solves from the clues. */
+  finale: { q: string; choices: string[] }
+  solved: string
+  power: string
+}
 interface Ponder { q: string; choices: string[] }
 
 interface AdventureText {
@@ -61,6 +86,11 @@ interface AdventureText {
   dunno: string
   ponderAck: (choice: string) => string
   ponderDunno: string
+  recapTitle: string
+  recap: (answer: string, guess: string | null) => string
+  together: string
+  finaleTitle: string
+  finaleTry: string
   letsSee: string
   longAgo: string
   mysteryTitle: string
@@ -82,14 +112,20 @@ interface AdventureText {
 const zh: AdventureText = {
   ponderTitle: '🤔 想想看',
   dunno: '🤔 還不知道',
-  ponderAck: c => `你想的是「${c}」。好想法！我們一起來看看小狐狸怎麼想。`,
-  ponderDunno: '沒關係，想不出來也很棒！我們一起來看看小狐狸怎麼想。',
+  ponderAck: c => `你想的是「${c}」。先記住你的想法，看完示範再回來對對看！`,
+  ponderDunno: '沒關係！看完示範，再回來想一想。',
+  recapTitle: '🤔 剛剛的問題',
+  recap: (answer, guess) => guess === null ? `答案是「${answer}」。看完示範，你也知道為什麼了吧！`
+    : guess === answer ? `答案是「${answer}」，你一開始就想對了，好厲害！` : `答案是「${answer}」。你剛剛想的是「${guess}」，現在知道差在哪裡了吧！`,
+  together: '一起做',
+  finaleTitle: '🔎 線索都找到了！換你來解謎：',
+  finaleTry: '再看看線索，想一想！',
   letsSee: '看示範',
   longAgo: '📜 從前從前',
   mysteryTitle: '🧩 島上的謎題',
   clueOf: n => `線索 ${n}`,
   hidden: '？？？ 過關就能找到',
-  foxGrew: n => `小狐狸變強了！升到 Lv.${n}`,
+  foxGrew: n => `小狐狸變強了！升到第 ${n} 級！`,
   newClue: n => `找到線索 ${n}：`,
   solvedTitle: '🎉 謎題解開了！',
   newPower: p => `小狐狸得到新能力：${p}`,
@@ -107,7 +143,7 @@ const zh: AdventureText = {
     'place-digit': { q: '305 和 35 都有 3 和 5，哪個比較多？為什麼？', choices: ['305', '35', '一樣多'] },
     'place-column': { q: '48 元再存 27 元，個位 8 加 7 超過 10 了，該怎麼辦？', choices: ['75', '65', '615'] },
     'shapes-name': { q: '三角形倒過來，還是三角形嗎？', choices: ['是', '不是'] },
-    'shapes-symmetry': { q: '哪一個對折之後，兩邊會一模一樣？', choices: ['🦋', '🌀'] },
+    'shapes-symmetry': { q: '哪一個對折之後，兩邊會一模一樣？', choices: ['🦋 蝴蝶', '🌀 漩渦'] },
     'shapes-measure': { q: '尺斷了，從 2 開始量，鉛筆尖到 7。鉛筆有多長？', choices: ['5', '7', '9'] },
     'farm-array': { q: '不要一棵一棵數，你能很快算出有幾棵菜嗎？', choices: ['10', '12', '14'] },
     'farm-times': { q: '4 袋糖果，每袋 3 顆，一共幾顆？', choices: ['7', '12', '15'] },
@@ -121,7 +157,7 @@ const zh: AdventureText = {
     'port-place': { q: '腳踏車 12000 元，要怎麼唸？', choices: ['一千兩百', '一萬兩千', '十二百'] },
     'port-area': { q: '要鋪滿這塊地，需要幾塊地墊？', choices: ['5', '6', '9'] },
     'port-decimal': { q: '體溫 37.5 度，比 37 度多還是少？', choices: ['多一點', '少一點', '一樣'] },
-    'challenge-pattern': { q: '紅、藍、紅、藍、紅……下一個是什麼？', choices: ['🔴', '🔵'] },
+    'challenge-pattern': { q: '紅、藍、紅、藍、紅……下一個是什麼？', choices: ['🔴 紅色', '🔵 藍色'] },
     'challenge-balance': { q: '天平平衡了：一顆西瓜和幾顆蘋果一樣重？', choices: ['2', '3', '4'] },
     'challenge-legs': { q: '雞和兔子一共 3 隻，有 10 隻腳。你猜有幾隻兔子？', choices: ['1 隻', '2 隻', '3 隻'] },
   },
@@ -140,54 +176,63 @@ const zh: AdventureText = {
     forest: {
       title: '松鼠的果子少了！',
       clues: ['倉庫裡數一數，只剩 7 顆果子，可是原本有 10 顆。', '地上的小腳印一跳一跳，從 1 號樹跳到了 4 號樹。', '4 號樹洞裡，一眼就看到 3 顆果子！'],
+      finale: { q: '倉庫剩 7 顆，樹洞找到 3 顆。全部找回來，一共有幾顆？', choices: ['9', '10', '11'] },
       solved: '7 顆加 3 顆，剛好 10 顆！原來是小松鼠藏起來當點心。',
       power: '🔍 數清楚的眼睛',
     },
     bay: {
       title: '船長的寶箱打不開！',
-      clues: ['寶箱上寫著：「把珍珠放滿 10 顆才會開。」裡面已經有 6 顆。', '船長的紙條說：「第二道密碼是一個十和 4 個一。」', '再放 4 顆珍珠，湊滿 10 顆；密碼輸入 14……'],
+      clues: ['寶箱上寫著：「把珍珠放滿 10 顆才會開。」裡面已經有 6 顆。', '船長的紙條說：「第二道密碼是一個十和 4 個一。」', '再放 4 顆珍珠，湊滿 10 顆！最後一道鎖要輸入密碼。'],
+      finale: { q: '密碼是「一個十和 4 個一」，要輸入哪個數？', choices: ['14', '41', '104'] },
       solved: '喀！寶箱打開了，裡面是 14 顆閃亮的貝殼！',
       power: '🧭 湊十羅盤',
     },
     place: {
       title: '商店的價錢牌被風吹亂了！',
-      clues: ['撿到一張牌：2 個百、5 個十、3 個一，是 253 元。', '另一張寫 352，數字一樣，位置不同，價錢也不一樣。', '小熊 253 元加上皮球 352 元，一共是 605 元。'],
+      clues: ['撿到一張牌：2 個百、5 個十、3 個一，是 253 元。', '另一張寫 352，數字一樣，位置不同，價錢也不一樣。', '老闆說：小熊和皮球一起買，要付多少錢呢？'],
+      finale: { q: '小熊 253 元加上皮球 352 元，一共多少錢？', choices: ['595', '605', '615'] },
       solved: '價錢牌都放回正確的位置，老闆說：「謝謝小狐狸，再也不會算錯錢了！」',
       power: '🗝️ 位值鑰匙',
     },
     shapes: {
       title: '小木屋的窗戶裝不上去！',
-      clues: ['窗框是正方形，可是做好的玻璃是長方形。', '對折玻璃上的花紋，左右一模一樣，花紋沒問題。', '用尺量：窗框 30 公分，玻璃 35 公分，多了 5 公分。'],
+      clues: ['窗框是正方形，可是做好的玻璃是長方形。', '對折玻璃上的花紋，左右一模一樣，花紋沒問題。', '用尺量：窗框 30 公分，玻璃 35 公分。'],
+      finale: { q: '窗框 30 公分，玻璃 35 公分，玻璃要切掉幾公分？', choices: ['5', '6', '65'] },
       solved: '把玻璃切掉 5 公分，變成正方形，窗戶裝好了！',
       power: '📐 魔法量尺',
     },
     farm: {
       title: '是誰偷吃了高麗菜？',
-      clues: ['菜園 3 排、每排 5 棵，應該有 15 棵，現在只剩 12 棵。', '地上有兔子腳印，一隻兔子 4 隻腳，一共 12 個腳印，是 3 隻兔子。', '少了 3 棵菜，3 隻兔子平分，每隻吃了 1 棵。'],
+      clues: ['菜園 3 排、每排 5 棵，應該有 15 棵，現在只剩 12 棵。', '地上有兔子的腳印，數一數有 3 隻兔子的腳印。', '兔子們說：「我們每隻吃得一樣多！」'],
+      finale: { q: '少了 3 棵菜，3 隻兔子吃得一樣多，每隻吃了幾棵？', choices: ['1', '2', '3'] },
       solved: '原來是 3 隻肚子餓的小兔子！小狐狸幫牠們種了一排自己的紅蘿蔔。',
       power: '⚡ 乘法閃電',
     },
     market: {
       title: '市集的大鐘停了！',
-      clues: ['大鐘停在 3 點，可是現在已經 3 點半了。', '修鐘師傅說：修理要 45 元。錢包裡有 4 個 10 元和 1 個 5 元，剛好夠。', '付了 50 元，師傅找回 5 元，一毛都沒少。'],
+      clues: ['大鐘停在 3 點，可是現在已經 3 點半了。', '修鐘師傅說：修理要 45 元。', '你拿出一張 50 元的鈔票付錢。'],
+      finale: { q: '修理 45 元，你付了 50 元，師傅要找回多少？', choices: ['5', '15', '95'] },
       solved: '噹、噹、噹！大鐘修好了，市集準時開張。',
       power: '⌚ 時光手錶',
     },
     kitchen: {
       title: '生日蛋糕不夠分？',
-      clues: ['蛋糕切成 4 片，可是來了 8 個朋友。', '每片再切一半，一片就變成 8 分之 1。', '2 片 8 分之 1，和 1 片 4 分之 1 一樣多！'],
+      clues: ['蛋糕切成 4 片，可是來了 8 個朋友。', '每片再切一半，一片就變成 8 分之 1。', '有人想吃 4 分之 1 那麼多，就給他 2 片 8 分之 1，可以嗎？'],
+      finale: { q: '2 片 8 分之 1，和 1 片 4 分之 1，哪個比較多？', choices: ['2 片 8 分之 1', '1 片 4 分之 1', '一樣多'] },
       solved: '8 個朋友每人一片 8 分之 1，大家都吃到了，誰都不吃虧。',
       power: '🥄 公平魔法勺',
     },
     port: {
       title: '大船的貨單看不懂！',
-      clues: ['貨單寫著 3 萬 2 千件，就是 32,000 件。', '倉庫地板長 8 格、寬 5 格，一共可以放 40 箱。', '每箱重 2.5 公斤，比 2 公斤多一半。'],
+      clues: ['貨單寫著 3 萬 2 千件，就是 32,000 件。', '倉庫地板長 8 格、寬 5 格，一格放一箱。', '每箱重 2.5 公斤，比 2 公斤多半公斤。'],
+      finale: { q: '倉庫長 8 格、寬 5 格，一格放一箱，最多可以放幾箱？', choices: ['13', '40', '26'] },
       solved: '貨物整整齊齊搬進倉庫，船長送給小狐狸一副望遠鏡！',
       power: '🔭 大數望遠鏡',
     },
     challenge: {
       title: '神秘的寶藏地圖',
-      clues: ['地圖上的石頭寫著 2、4、6、8……往第 10 號石頭走。', '寶箱旁的天平：1 顆寶石和 2 枚金幣一樣重。', '守門的雞和兔子共 5 隻、14 隻腳：3 隻雞、2 隻兔子，門開了！'],
+      clues: ['地圖上的石頭寫著 2、4、6、8……往第 10 號石頭走。', '寶箱旁的天平：1 顆寶石和 2 枚金幣一樣重。', '守門的雞和兔子一共 5 隻、14 隻腳。說出有幾隻兔子，門才會打開！'],
+      finale: { q: '雞和兔子一共 5 隻、14 隻腳，有幾隻兔子？', choices: ['1', '2', '3'] },
       solved: '寶藏是一本《思考之書》，小狐狸成為真正的數學偵探！',
       power: '🧠 偵探大腦',
     },
@@ -197,14 +242,20 @@ const zh: AdventureText = {
 const en: AdventureText = {
   ponderTitle: '🤔 Think first',
   dunno: "🤔 Not sure yet",
-  ponderAck: c => `You thought "${c}". Good thinking! Let's see how Fox works it out.`,
-  ponderDunno: "That's fine, thinking about it is great! Let's see how Fox works it out.",
+  ponderAck: c => `You thought "${c}". Hold on to that idea, watch Fox, then come back and check!`,
+  ponderDunno: "That's fine! Watch Fox, then think about it again.",
+  recapTitle: '🤔 The question from before',
+  recap: (answer, guess) => guess === null ? `The answer is "${answer}". After watching, you can see why!`
+    : guess === answer ? `The answer is "${answer}". You had it right from the start!` : `The answer is "${answer}". You thought "${guess}". Can you see the difference now?`,
+  together: 'Together',
+  finaleTitle: '🔎 All the clues are found! Now you solve it:',
+  finaleTry: 'Look at the clues again and think!',
   letsSee: 'Watch',
   longAgo: '📜 Long, long ago',
   mysteryTitle: '🧩 Island mystery',
   clueOf: n => `Clue ${n}`,
   hidden: '??? Finish a level to find it',
-  foxGrew: n => `Fox got stronger! Now Lv.${n}`,
+  foxGrew: n => `Fox got stronger! Now level ${n}!`,
   newClue: n => `Found clue ${n}: `,
   solvedTitle: '🎉 Mystery solved!',
   newPower: p => `Fox has a new power: ${p}`,
@@ -222,7 +273,7 @@ const en: AdventureText = {
     'place-digit': { q: '305 and 35 both have a 3 and a 5. Which is more? Why?', choices: ['305', '35', 'The same'] },
     'place-column': { q: 'Save 27 more on top of 48. The ones, 8 + 7, go past 10. What now?', choices: ['75', '65', '615'] },
     'shapes-name': { q: 'Turn a triangle upside down. Is it still a triangle?', choices: ['Yes', 'No'] },
-    'shapes-symmetry': { q: 'Which one has two matching halves when you fold it?', choices: ['🦋', '🌀'] },
+    'shapes-symmetry': { q: 'Which one has two matching halves when you fold it?', choices: ['🦋 Butterfly', '🌀 Swirl'] },
     'shapes-measure': { q: 'A broken ruler starts at 2 and the pencil tip is at 7. How long is the pencil?', choices: ['5', '7', '9'] },
     'farm-array': { q: "Don't count one by one: how quickly can you find how many cabbages?", choices: ['10', '12', '14'] },
     'farm-times': { q: '4 bags of sweets, 3 in each. How many sweets?', choices: ['7', '12', '15'] },
@@ -236,7 +287,7 @@ const en: AdventureText = {
     'port-place': { q: 'A bike costs 12000. How do you say it?', choices: ['one thousand two hundred', 'twelve thousand', 'twelve hundred hundred'] },
     'port-area': { q: 'How many mats cover this floor?', choices: ['5', '6', '9'] },
     'port-decimal': { q: 'A temperature of 37.5: more or less than 37?', choices: ['A bit more', 'A bit less', 'The same'] },
-    'challenge-pattern': { q: 'Red, blue, red, blue, red… what comes next?', choices: ['🔴', '🔵'] },
+    'challenge-pattern': { q: 'Red, blue, red, blue, red… what comes next?', choices: ['🔴 Red', '🔵 Blue'] },
     'challenge-balance': { q: 'The scale balances. One melon weighs the same as how many apples?', choices: ['2', '3', '4'] },
     'challenge-legs': { q: '3 chickens and rabbits with 10 legs. How many rabbits, do you think?', choices: ['1', '2', '3'] },
   },
@@ -255,54 +306,63 @@ const en: AdventureText = {
     forest: {
       title: "The squirrels' nuts are missing!",
       clues: ['Count the store: only 7 nuts left, but there were 10.', 'Little footprints hop from tree 1 to tree 4.', 'In the hole in tree 4 you can see 3 nuts at a glance!'],
+      finale: { q: '7 left in the store and 3 found in the tree. How many altogether?', choices: ['9', '10', '11'] },
       solved: '7 and 3 make exactly 10! The little squirrel hid them for a snack.',
       power: '🔍 Sharp counting eyes',
     },
     bay: {
       title: "The captain's chest won't open!",
-      clues: ['The chest says: "Fill me with 10 pearls to open." There are 6 inside.', 'The captain\'s note says: "The second code is one ten and 4 ones."', 'Put in 4 more pearls to make 10, and type in 14…'],
+      clues: ['The chest says: "Fill me with 10 pearls to open." There are 6 inside.', 'The captain\'s note says: "The second code is one ten and 4 ones."', 'Put in 4 more pearls to make 10! The last lock needs the code.'],
+      finale: { q: 'The code is "one ten and 4 ones". Which number do you type?', choices: ['14', '41', '104'] },
       solved: 'Click! The chest opens, and inside are 14 shining shells!',
       power: '🧭 Make-ten compass',
     },
     place: {
       title: "The wind blew the shop's price tags away!",
-      clues: ['One tag: 2 hundreds, 5 tens, 3 ones. That is 253.', 'Another says 352: the same digits in different places, so a different price.', 'The bear at 253 plus the ball at 352 makes 605.'],
+      clues: ['One tag: 2 hundreds, 5 tens, 3 ones. That is 253.', 'Another says 352: the same digits in different places, so a different price.', 'The shopkeeper asks: the bear and the ball together, how much is that?'],
+      finale: { q: 'The bear at 253 and the ball at 352. How much altogether?', choices: ['595', '605', '615'] },
       solved: 'All the tags are back in place. The shopkeeper says: "Thank you, Fox! Nobody will get the money wrong now."',
       power: '🗝️ Place-value key',
     },
     shapes: {
       title: "The cabin window won't fit!",
-      clues: ['The frame is a square, but the glass is a rectangle.', 'Fold the pattern on the glass: both sides match, so the pattern is fine.', 'Measure: the frame is 30 cm and the glass is 35 cm. 5 cm too long.'],
+      clues: ['The frame is a square, but the glass is a rectangle.', 'Fold the pattern on the glass: both sides match, so the pattern is fine.', 'Measure: the frame is 30 cm and the glass is 35 cm.'],
+      finale: { q: 'The frame is 30 cm and the glass 35 cm. How much glass to trim?', choices: ['5', '6', '65'] },
       solved: 'Trim 5 cm off the glass to make a square, and the window fits!',
       power: '📐 Magic ruler',
     },
     farm: {
       title: 'Who ate the cabbages?',
-      clues: ['3 rows of 5 should make 15 cabbages, but only 12 are left.', 'Rabbit footprints: 4 feet each and 12 prints, so 3 rabbits.', '3 cabbages gone, shared by 3 rabbits: 1 each.'],
+      clues: ['3 rows of 5 should make 15 cabbages, but only 12 are left.', 'Rabbit footprints on the ground: they belong to 3 rabbits.', 'The rabbits say: "We each ate the same amount!"'],
+      finale: { q: '3 cabbages gone and 3 rabbits each ate the same. How many each?', choices: ['1', '2', '3'] },
       solved: 'It was 3 hungry little rabbits! Fox planted them a row of carrots of their own.',
       power: '⚡ Times lightning',
     },
     market: {
       title: 'The market clock has stopped!',
-      clues: ["The clock says 3 o'clock, but it is already half past 3.", 'The clockmaker charges 45. The purse has four 10s and one 5: just enough.', 'Pay 50 and get 5 back. Not a coin missing.'],
+      clues: ["The clock says 3 o'clock, but it is already half past 3.", 'The clockmaker says: fixing it costs 45.', 'You pay with a 50 note.'],
+      finale: { q: 'Fixing costs 45 and you paid 50. How much change?', choices: ['5', '15', '95'] },
       solved: 'Dong, dong, dong! The clock is fixed and the market opens on time.',
       power: '⌚ Time watch',
     },
     kitchen: {
       title: 'Not enough birthday cake?',
-      clues: ['The cake is cut into 4 slices, but 8 friends came.', 'Cut each slice in half: now one slice is one eighth.', 'Two eighths are the same as one quarter!'],
+      clues: ['The cake is cut into 4 slices, but 8 friends came.', 'Cut each slice in half: now one slice is one eighth.', 'Someone wants a quarter. Is giving them two eighths the same?'],
+      finale: { q: 'Two eighths, or one quarter: which is more?', choices: ['Two eighths', 'One quarter', 'The same'] },
       solved: 'All 8 friends get one eighth each. Everyone has some and nobody gets less.',
       power: '🥄 Fair-share spoon',
     },
     port: {
       title: "The ship's cargo list is a puzzle!",
-      clues: ['The list says 32 thousand items: 32,000.', 'The warehouse floor is 8 squares long and 5 wide: room for 40 boxes.', 'Each box weighs 2.5 kg, half a kilo more than 2.'],
+      clues: ['The list says 32 thousand items: 32,000.', 'The warehouse floor is 8 squares long and 5 wide, one box per square.', 'Each box weighs 2.5 kg, half a kilo more than 2.'],
+      finale: { q: '8 squares long, 5 wide, one box per square. How many boxes fit?', choices: ['13', '40', '26'] },
       solved: 'All the cargo is stacked neatly away, and the captain gives Fox a telescope!',
       power: '🔭 Big-number telescope',
     },
     challenge: {
       title: 'The secret treasure map',
-      clues: ['The stones on the map go 2, 4, 6, 8… walk to stone 10.', 'The scale by the chest: 1 jewel weighs the same as 2 gold coins.', 'The gate guards, chickens and rabbits, have 5 heads and 14 legs: 3 chickens and 2 rabbits. The gate opens!'],
+      clues: ['The stones on the map go 2, 4, 6, 8… walk to stone 10.', 'The scale by the chest: 1 jewel weighs the same as 2 gold coins.', 'The gate guards, chickens and rabbits, have 5 heads and 14 legs. Say how many rabbits and the gate opens!'],
+      finale: { q: '5 chickens and rabbits with 14 legs. How many rabbits?', choices: ['1', '2', '3'] },
       solved: 'The treasure is The Book of Thinking. Fox is a real math detective now!',
       power: '🧠 Detective brain',
     },

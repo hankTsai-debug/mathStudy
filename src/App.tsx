@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { ADVENTURE, foxLevel, solvedIslands } from './adventure'
+import { Finale } from './Finale'
 import { Fox } from './Fox'
-import { starsFor } from './game/logic'
+import { pick, starsFor } from './game/logic'
 import { STRINGS, type Lang } from './i18n'
 import { ISLANDS, isUnlocked, type Island, type Level } from './islands'
 import { Play } from './Play'
@@ -14,7 +15,7 @@ type Screen =
   | { name: 'map' }
   | { name: 'island'; island: Island }
   | { name: 'story'; island: Island }
-  | { name: 'play'; island: Island; level: Level; run: number }
+  | { name: 'play'; island: Island; level: Level; run: number; review?: Level }
   | { name: 'result'; island: Island; level: Level; run: number; firstTry: number; stars: number; growth: Growth | null }
 
 /** What a level finished for the first time brings: the fox's new level, a clue, maybe the island's mystery solved. */
@@ -51,12 +52,17 @@ export default function App() {
   const enterIsland = (island: Island) =>
     island.levels.some(l => progress.stars[l.id]) ? goIsland(island) : showStory(island)
   const runs = useRef(0)
-  const start = (island: Island, level: Level) => setScreen({ name: 'play', island, level, run: ++runs.current })
+  const start = (island: Island, level: Level) => setScreen({ name: 'play', island, level, run: ++runs.current, review: reviewFor(island) })
+  // Review comes from levels already earned on other islands.
+  const reviewFor = (island: Island) => {
+    const earned = ISLANDS.filter(i => i !== island).flatMap(i => i.levels).filter(l => progress.stars[l.id])
+    return earned.length ? pick(earned) : undefined
+  }
 
-  const finish = (firstTry: number) => {
+  const finish = (firstTry: number, misses: number) => {
     if (screen.name !== 'play') return
     const { id } = screen.level
-    const stars = starsFor(firstTry)
+    const stars = starsFor(misses)
     const after = { ...progress.stars, [id]: Math.max(progress.stars[id] ?? 0, stars) }
     const island = screen.island
     const growth = progress.stars[id] ? null : {
@@ -71,7 +77,7 @@ export default function App() {
       t.result(firstTry),
       growth && a.foxGrew(growth.level),
       growth && a.newClue(growth.clue + 1) + m.clues[growth.clue],
-      growth?.solved && `${a.solvedTitle} ${m.solved} ${a.newPower(m.power)}`,
+      growth?.solved && `${a.finaleTitle} ${m.finale.q}`,
     ].filter(Boolean).join(' '))
   }
 
@@ -154,6 +160,7 @@ export default function App() {
           <Play
             key={screen.run}
             level={screen.level}
+            review={screen.review}
             firstVisit={!progress.stars[screen.level.id]}
             lang={progress.lang}
             t={t}
@@ -174,11 +181,7 @@ export default function App() {
                 <p className="grew">🦊⬆️ {a.foxGrew(screen.growth.level)}</p>
                 <p className="clue">🧩 {a.newClue(screen.growth.clue + 1)}{a.mystery[screen.island.id].clues[screen.growth.clue]}</p>
                 {screen.growth.solved && (
-                  <div className="solved a-pop">
-                    <p><b>{a.solvedTitle}</b> {a.mystery[screen.island.id].solved}</p>
-                    <p>✨ {a.newPower(a.mystery[screen.island.id].power)}</p>
-                    <p>🏅 {a.nowRank(a.ranks[solvedIslands(progress.stars).length])}</p>
-                  </div>
+                  <Finale island={screen.island.id} lang={progress.lang} prompt={prompt} rank={a.ranks[solvedIslands(progress.stars).length]} />
                 )}
               </div>
             )}
