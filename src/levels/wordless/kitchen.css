@@ -1,0 +1,38 @@
+/* 分數廚房, wordless (see kitchen.tsx) */
+.kt-col { display: flex; flex-direction: column; align-items: center; gap: 10px; width: 100%; }
+.kt-pair { display: flex; justify-content: center; gap: 14px; width: 100%; }
+.kt-pair > .kt-col { width: auto; padding: 4px; }
+.kt-row { display: inline-flex; align-items: center; justify-content: center; gap: 10px; }
+.kt-frac { font-size: 30px; font-weight: 800; }
+.kt-frac span:first-child { border-bottom-color: var(--ink); min-width: 1ch; min-height: 1.1em; }
+.kt-on { color: var(--dot-extra); }
+.kt-all { color: var(--accent); }
+
+.pie.kt-small { width: 150px; }
+.pie.kt-ghost path { stroke-dasharray: 8 6; }
+.pie path.kt-fill, .bar i.kt-fill { animation: kt-fill .4s backwards; }
+@keyframes kt-fill { from { fill: #fff8e7; background: #fff8e7; } }
+.kt-tag { transform-box: fill-box; transform-origin: center; animation: pop-in .35s backwards; }
+.kt-tag text { fill: #fff; font-size: 15px; font-weight: 800; text-anchor: middle; }
+.kt-tag.all circle { fill: var(--accent); }
+.kt-tag.on circle { fill: var(--dot-extra); }
+
+.kt-cmp { position: relative; width: 100%; max-width: 440px; }
+.kt-guide { position: absolute; top: 0; bottom: 0; width: 0; border-left: 3px dashed var(--good); pointer-events: none; }
+.ruler.kt-line { display: block; width: 100%; }
+.kt-line .kt-seg { stroke: var(--dot-extra); stroke-width: 10; stroke-linecap: round; }
+.kt-line .kt-star { transform-box: fill-box; transform-origin: center; animation: pop-in .35s backwards; }
+.kt-ghost .track, .kt-ghost .tick { stroke-dasharray: 6 5; opacity: .7; }
+
+.kt-bar { display: flex; flex-direction: column; gap: 4px; }
+.kt-bar.kt-ghost .bar { border-style: dashed; }
+.kt-tags { display: flex; height: 26px; }
+.kt-tags > span { flex: 1; position: relative; }
+.kt-chip { position: absolute; left: 50%; top: 0; width: 24px; height: 24px; margin-left: -12px; border-radius: 12px; color: #fff; font-size: 13px; display: grid; place-items: center; animation: pop-in .35s backwards; }
+.kt-chip.all { background: var(--accent); }
+.kt-chip.on { background: var(--dot-extra); }
+.bar i.kt-cut { animation: kt-cut .4s backwards; }
+@keyframes kt-cut { from { border-right-color: transparent; } }
+.kt-tag circle { stroke: #fff; stroke-width: 2; }
+.kt-line .kt-tag text { font-size: 18px; }
+.kt-tags.dense .kt-chip { width: 20px; height: 20px; margin-left: -10px; font-size: 11px; }

@@ -1,23 +1,12 @@
-// Animated, wordless lessons: each beat plays a short scene on the ten-frames (dots popping in,
+// 十的海灣's animated, wordless lessons: each beat plays a short scene on the ten-frames (dots popping in,
 // flying across, a ten lighting up) with counting notes, so the idea is shown, not told.
 // Beat i is narrated by t.teach[kind][i] when the voice is on, but the motion carries the meaning.
 import type { ReactNode } from 'react'
-import { sfx } from '../sound'
-import type { LevelKind } from '../islands'
-import { GuideFrames, type FrameCell } from './visuals'
-
-export interface AnimBeat {
-  /** How long the beat plays before moving on. */
-  ms: number
-  show: ReactNode
-  eq?: ReactNode
-  /** Sounds to play, at ms from the start of the beat. */
-  sounds?: [number, () => void][]
-}
+import { sfx } from '../../sound'
+import { GuideFrames, type FrameCell } from '../visuals'
+import { counts, type AnimBeat, type Helps, type Lessons } from './kit'
 
 const cells = (n: number, f: (i: number) => FrameCell) => Array.from({ length: n }, (_, i) => f(i))
-const counts = (from: number, n: number, start: number, gap: number): [number, () => void][] =>
-  Array.from({ length: n }, (_, j) => [start + j * gap, () => sfx.count(from + j)])
 /** Red for what was there, blue for what was added: the same colours as the dots. */
 const red = (x: ReactNode) => <b className="eq-a">{x}</b>
 const blue = (x: ReactNode) => <b className="eq-b">{x}</b>
@@ -107,4 +96,6 @@ const add20: AnimBeat[] = [
   },
 ]
 
-export const ANIM_LESSONS: Partial<Record<LevelKind, AnimBeat[]>> = { makeTen, teen, add20 }
+export const lessons: Lessons = { makeTen, teen, add20 }
+// 十的海灣's practice levels show their own help (see BayLevels).
+export const help: Helps = {}

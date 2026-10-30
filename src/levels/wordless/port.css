@@ -1,0 +1,49 @@
+/* 大數港口, wordless */
+.pt-col { display: flex; flex-direction: column; align-items: center; gap: 12px; width: 100%; }
+.pt-tag { position: absolute; left: -20px; right: -20px; top: -26px; display: flex; justify-content: center; pointer-events: none; z-index: 1; }
+
+/* Place values */
+.pt-place { display: grid; justify-content: center; align-items: center; row-gap: 6px; font-variant-numeric: tabular-nums; }
+.pt-digit { text-align: center; font-size: 52px; font-weight: 700; line-height: 1.1; }
+.pt-digit.pick { color: var(--dot); text-decoration: underline; text-underline-offset: 8px; }
+.pt-digit.pt-row { font-size: 40px; color: var(--dot-extra); }
+.pt-digit.pt-row.wrong { color: var(--dot); }
+.pt-pv { justify-self: center; display: block; }
+.pt-pv > span { display: block; min-width: 40px; padding: 2px 4px; border-radius: 10px; background: var(--soft); font-size: 12px; font-weight: 800; text-align: center; }
+.pt-pv.on > span { background: var(--accent); color: #fff; }
+
+/* Area and perimeter */
+.pt-area { display: flex; flex-direction: column; align-items: center; gap: 16px; }
+.pt-area-row { display: flex; align-items: center; gap: 18px; padding-right: 30px; }
+.pt-side-n { font-size: 22px; font-weight: 700; }
+.pt-grid { position: relative; display: grid; border: 3px solid #24361f; background: #f3fbef; }
+.pt-grid > i { width: 32px; height: 32px; border: 1px solid rgba(36, 54, 31, .3); display: grid; place-items: center; font-size: 12px; font-weight: 800; font-style: normal; color: #24361f; }
+.pt-grid > i.on { background: #cfe8c4; }
+.pt-grid > i.gap { outline: 3px dashed var(--accent); outline-offset: -5px; }
+.pt-rowhi { position: absolute; left: 0; width: 100%; background: rgba(245, 158, 11, .28); pointer-events: none; }
+.pt-rowtag { right: auto; left: calc(100% + 6px); margin-top: -12px; }
+.pt-edge { position: absolute; background: var(--dot); display: flex; align-items: center; justify-content: center; z-index: 1; }
+.pt-edge.top { left: -3px; right: -3px; top: -6px; height: 8px; }
+.pt-edge.bottom { left: -3px; right: -3px; bottom: -6px; height: 8px; }
+.pt-edge.left { top: -3px; bottom: -3px; left: -6px; width: 8px; }
+.pt-edge.right { top: -3px; bottom: -3px; right: -6px; width: 8px; }
+.pt-unit { position: absolute; width: 20px; height: 20px; margin: -10px 0 0 -10px; border-radius: 50%; display: grid; place-items: center; font-size: 10px; font-weight: 800; z-index: 2; }
+.pt-unit.on { background: var(--dot); color: #fff; }
+.pt-unit.gap { border: 3px dashed var(--accent); background: #fff; }
+.pt-unit.over { position: relative; margin: 0; border: 3px dashed var(--dot); display: block; }
+.pt-spill { display: flex; flex-wrap: wrap; justify-content: center; gap: 4px; max-width: 300px; }
+.pt-spill > i { width: 28px; height: 28px; border: 3px dashed var(--dot); border-radius: 4px; }
+
+/* Tenths */
+.pt-bars { display: flex; flex-direction: column; gap: 34px; width: 100%; max-width: 440px; padding-top: 26px; }
+.pt-bar-row { display: flex; align-items: center; gap: 8px; }
+.pt-bar { flex: 1; display: flex; border: 3px solid #24361f; border-radius: 6px; height: 46px; }
+.pt-bar.ghost { border-style: dashed; border-color: var(--dot); }
+.pt-bar > i { position: relative; flex: 1; font-style: normal; background: #fff8e7; border-right: 2px solid #24361f; }
+.pt-bar.ghost > i { border-right-style: dashed; background: none; }
+.pt-bar > i:last-child { border-right: 0; }
+.pt-bar > i.on { background: var(--dot); }
+.pt-bar-label { min-width: 34px; display: flex; justify-content: center; }
+.pt-mark { position: absolute; inset: 4px; border: 3px solid var(--good); border-radius: 4px; animation: pop-in .3s backwards; }
+.pt-mark.miss { border: 3px dashed var(--accent); animation: blink .6s 4; }
+.pt-bar .tag-n { font-size: 12px; padding: 0 4px; }

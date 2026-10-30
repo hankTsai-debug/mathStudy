@@ -1,0 +1,56 @@
+/* 位值山谷: wordless lessons and help */
+.pv-wrap { width: 100%; display: flex; flex-direction: column; align-items: center; gap: 12px; }
+.pv-eq { font-size: 26px; font-weight: 800; text-align: center; }
+.c-h { color: #1e6fd9; }
+.c-t { color: #c47a00; }
+.c-o { color: #2e7d32; }
+
+/* Blocks sorted into hundreds | tens | ones, each with a number slot underneath. */
+.pv { display: flex; align-items: flex-end; justify-content: center; gap: 14px; }
+.pv-col { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+.pv-items { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: center; gap: 4px; }
+.pv-col.h .pv-items { max-width: 160px; }
+.pv-col.o .pv-items { display: grid; grid-template-columns: repeat(3, 10px); gap: 3px; }
+.pv .flat { width: 50px; height: 50px; background-size: 5px 5px; }
+.pv .rod { width: 9px; height: 50px; background-size: 9px 5px; }
+.pv .cube { width: 10px; height: 10px; }
+.pv-slot { position: relative; min-width: 56px; height: 34px; font-size: 24px; font-weight: 800; text-align: center; }
+.pv-slot > * { position: absolute; inset: 0; display: grid; place-items: center; background: var(--card); }
+.pv-slot .ok { color: var(--good); }
+.pv-slot .bad { color: var(--dot); outline: 3px dashed var(--dot); outline-offset: -2px; border-radius: 8px; animation: shake .5s 2; }
+
+/* Lesson: cubes join into a rod, rods into a flat. */
+.join { display: flex; align-items: flex-end; justify-content: center; gap: 14px; font-size: 32px; font-weight: 800; }
+.stack { display: flex; flex-direction: column-reverse; gap: 0; }
+.stack .cube { margin: 0; }
+.row-rods { display: flex; gap: 2px; align-items: flex-end; }
+
+/* A number written in place columns, with that place's blocks under each digit. */
+.places { display: flex; justify-content: center; gap: 10px; }
+.place { display: flex; flex-direction: column; align-items: center; gap: 6px; min-width: 70px; }
+.place .digit { font-size: 60px; font-weight: 800; line-height: 1.1; padding: 0 8px; border-radius: 12px; }
+.place .digit.a-hi { background: #fff3d6; }
+.place .pv-items { min-height: 56px; max-width: 90px; }
+.place .flat { width: 26px; height: 26px; background-size: 2.6px 2.6px; }
+.place .rod { width: 6px; height: 40px; background-size: 6px 4px; }
+.place .cube { width: 10px; height: 10px; }
+/* A value written under the number, lined up by place: 50 sits under the tens and ones. */
+.place .under { font-size: 34px; font-weight: 800; height: 44px; }
+.place .under.bad { color: var(--dot); }
+.place .under.good { color: var(--good); }
+
+/* Column sums: sign | tens | ones, with a small row on top for carries and borrows. */
+.colsum { display: grid; grid-template-columns: repeat(3, 56px); font-size: 44px; font-weight: 700; text-align: center; font-variant-numeric: tabular-nums; position: relative; }
+.colsum > span { position: relative; line-height: 1.2; border-radius: 8px; }
+.colsum .mini { font-size: 22px; height: 28px; line-height: 28px; color: var(--dot); font-weight: 800; }
+.colsum hr { grid-column: 1 / -1; width: 100%; border: 0; border-top: 4px solid var(--ink); margin: 4px 0; }
+.colsum .res { color: var(--dot); }
+.colsum .band { background: #fff3d6; animation: band-in .4s backwards; }
+@keyframes band-in { from { background: transparent; } }
+.colsum .lend { font-size: 22px; color: var(--dot); vertical-align: top; }
+.colsum .slash { position: absolute; left: 10%; right: 10%; top: 50%; height: 4px; background: var(--dot); transform: rotate(-35deg); border-radius: 2px; }
+.colsum .pick { color: var(--dot); outline: 3px dashed var(--dot); outline-offset: -2px; animation: shake .5s 2; }
+.colsum .miss { outline: 3px dashed var(--accent); outline-offset: -2px; animation: blink .6s 4; }
+.join.big { zoom: 1.5; }
+.stack .cube { height: 10px; }
+.colsum > span > span { display: inline-block; }

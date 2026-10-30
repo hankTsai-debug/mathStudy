@@ -1,0 +1,11 @@
+/* 數數森林: wordless lessons and help */
+.lesson-col { width: 100%; display: flex; flex-direction: column; align-items: center; gap: 8px; }
+.big-n { font-size: 56px; font-weight: 800; color: var(--accent); }
+.line .pad { position: relative; }
+.line .pad .tag-n { top: -30px; right: auto; left: 50%; margin-left: -12px; }
+.pad.want .lily { outline: 3px dashed var(--accent); outline-offset: 2px; animation: blink .6s 4; }
+/* Count help: dashed rings for what the chosen number left out or added. */
+.field .item .mark { inset: 0; }
+.field .extra-ring { width: 56px; height: 56px; position: relative; display: block; }
+.field .extra-ring .mark { inset: 4px; }
+.line .pad.route .lily { animation: blink .6s 3 backwards; }

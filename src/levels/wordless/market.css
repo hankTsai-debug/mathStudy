@@ -1,0 +1,32 @@
+/* 時間錢幣市集, wordless (see market.tsx) */
+.mk-col { display: flex; flex-direction: column; align-items: center; gap: 10px; width: 100%; }
+.mk-pair { display: flex; justify-content: center; gap: 14px; width: 100%; }
+.mk-pair > .mk-col { width: auto; padding: 4px; }
+.mk-cap { font-size: 26px; font-weight: 800; }
+.clock.mk-small { width: 150px; }
+.clock.mk-ghost > circle:first-child { fill: #fff; stroke-dasharray: 10 8; }
+.clock .mk-hi { stroke: var(--accent); animation: blink .6s 3; }
+.clock .mk-ring { fill: none; stroke: var(--accent); stroke-width: 4; transform-box: fill-box; transform-origin: center; animation: pop-in .35s backwards; }
+.clock .mk-tag { transform-box: fill-box; transform-origin: center; animation: pop-in .35s backwards; }
+.clock .mk-tag circle { fill: var(--dot-extra); }
+.clock .mk-tag text { fill: #fff; font-size: 15px; font-weight: 800; }
+@keyframes mk-turn { from { transform: rotate(var(--from)); } to { transform: rotate(var(--to)); } }
+
+.coin.mk-miss { outline: 4px dashed var(--accent); outline-offset: 3px; animation: blink .6s 4; }
+.coin.mk-over { outline: 4px dashed var(--dot); outline-offset: 3px; animation: shake .5s 2; }
+.mk-vs, .mk-ne { font-size: 30px; font-weight: 800; color: var(--dot); }
+.mk-row { display: flex; align-items: center; justify-content: center; gap: 12px; }
+.mk-pad { padding: 0 8px; }
+
+.mk-hops { width: 100%; max-width: 420px; }
+.mk-hops .mk-track { stroke: var(--ink); stroke-width: 4; }
+.mk-hops .mk-tick { stroke: var(--ink); stroke-width: 3; }
+.mk-hops text { font-size: 18px; font-weight: 700; text-anchor: middle; fill: var(--ink); }
+.mk-hops .mk-price { fill: var(--dot); }
+.mk-hops .mk-paid { fill: #b08900; }
+.mk-hops .mk-arc { fill: none; stroke: var(--dot-extra); stroke-width: 4; stroke-linecap: round; }
+.mk-hops .mk-draw { stroke-dasharray: 1; animation: mk-draw .5s backwards; }
+.mk-hops .mk-plus { fill: var(--dot-extra); font-size: 20px; font-weight: 800; transform-box: fill-box; transform-origin: center; }
+@keyframes mk-draw { from { stroke-dashoffset: 1; } to { stroke-dashoffset: 0; } }
+.mk-back { display: inline-grid; place-items: center; width: 52px; height: 52px; border-radius: 50%; background: #e6e6e6; border: 3px dashed var(--dot-extra); color: var(--dot-extra); }
+.mk-price-tag { display: inline-block; white-space: nowrap; background: #fff3c4; border-radius: 12px; padding: 4px 12px; }

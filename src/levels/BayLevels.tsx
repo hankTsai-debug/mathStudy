@@ -6,37 +6,9 @@ import { useState, type ReactNode } from 'react'
 import { makeTenRound, options, teenRound } from '../game/logic'
 import { add20 } from '../game/quizzes'
 import { sfx } from '../sound'
-import { useLater, useOnMount } from './hooks'
+import { useFeedback, useOnMount } from './hooks'
 import { Choices, type LevelProps } from './shared'
 import { GuideFrames, type FrameCell } from './visuals'
-
-type Feedback =
-  | { mode: 'idle' | 'strategy' | 'reveal' | 'solved' }
-  | { mode: 'wrong'; chose: number }
-
-/** Tracks misses and turns each into the next level of help. */
-function useFeedback() {
-  const [fb, setFb] = useState<Feedback>({ mode: 'idle' })
-  const [misses, setMisses] = useState(0)
-  // Bumped on every change so the picture remounts and its animations replay.
-  const [run, setRun] = useState(0)
-  const later = useLater()
-  return {
-    fb, run,
-    pulse: misses >= 3,
-    /** Records a miss and returns which help it earns: 1 show the choice, 2 the strategy, 3 count it out. */
-    miss(chose: number) {
-      const n = misses + 1
-      setMisses(n)
-      setFb(n === 1 ? { mode: 'wrong', chose } : n === 2 ? { mode: 'strategy' } : { mode: 'reveal' })
-      setRun(r => r + 1)
-      sfx.miss()
-      return Math.min(n, 3)
-    },
-    solve() { setFb({ mode: 'solved' }); setRun(r => r + 1) },
-    later,
-  }
-}
 
 const cells = (n: number, f: (i: number) => FrameCell) => Array.from({ length: n }, (_, i) => f(i))
 
@@ -72,7 +44,7 @@ export function BayMakeTen({ round, ctx }: LevelProps) {
   const base = cells(10, i => (i < spec.n ? { dot: 'a' } : {}))
   let picture = <GuideFrames cells={base} />
   if (f.fb.mode === 'wrong') {
-    const { cells: c, overflow } = markChoice(base, gaps, f.fb.chose)
+    const { cells: c, overflow } = markChoice(base, gaps, f.fb.chose as number)
     picture = <GuideFrames cells={c} overflow={overflow} />
   } else if (f.fb.mode === 'strategy' || f.fb.mode === 'reveal') {
     // Count the gaps one by one.
@@ -119,7 +91,7 @@ export function BayTeen({ round, ctx }: LevelProps) {
   const base = cells(20, i => (i < 10 ? { dot: 'a' } : i < 10 + spec.k ? { dot: 'b' } : {}))
   let picture = <GuideFrames cells={base} />
   if (f.fb.mode === 'wrong') {
-    const { cells: c, overflow } = markChoice(base, [...Array(10).keys(), ...ones], f.fb.chose)
+    const { cells: c, overflow } = markChoice(base, [...Array(10).keys(), ...ones], f.fb.chose as number)
     picture = <GuideFrames cells={c} overflow={overflow} />
   } else if (f.fb.mode === 'strategy') {
     picture = <GuideFrames cells={base} glow={[0]} glowDelay={100} labels={['10']} />
@@ -193,7 +165,7 @@ export function BayAdd20({ round, ctx }: LevelProps) {
 
   let picture = <GuideFrames cells={base} />
   if (f.fb.mode === 'wrong') {
-    const { cells: c, overflow } = markChoice(base, kept, f.fb.chose)
+    const { cells: c, overflow } = markChoice(base, kept, f.fb.chose as number)
     picture = <GuideFrames cells={c} overflow={overflow} />
   } else if (f.fb.mode !== 'idle') {
     const { c, glow } = strategy()

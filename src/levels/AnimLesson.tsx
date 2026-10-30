@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import type { Strings } from '../i18n'
 import type { LevelKind } from '../islands'
-import type { AnimBeat } from './animLessons'
+import type { AnimBeat } from './wordless/kit'
 
 /** Plays an animated lesson beat by beat, on its own; ◀ ▶ step through it, 🔁 replays it. */
 export function AnimLesson({ kind, beats, t, prompt, onDone }: {

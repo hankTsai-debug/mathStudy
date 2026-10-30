@@ -1,0 +1,18 @@
+/* 乘法農場 wordless pictures */
+.wl-col { display: flex; flex-direction: column; align-items: center; gap: 10px; width: 100%; }
+.wl-rows { display: flex; flex-direction: column; gap: 6px; align-items: center; }
+.wl-row { position: relative; display: flex; gap: 6px; padding: 2px 8px; border-radius: 12px; font-size: 32px; }
+.wl-row.lit, .wl-groups .group.lit { animation: row-lit .4s forwards; }
+@keyframes row-lit { to { background: #fff1c9; box-shadow: 0 0 0 3px var(--accent); } }
+.wl-row > .row-tag { top: calc(50% - 12px); right: -38px; }
+.wl-plant { position: relative; display: inline-block; line-height: 1.1; }
+.wl-groups .group { position: relative; }
+.wl-dot { position: relative; display: block; width: 16px; height: 16px; }
+.wl-dot .mark { inset: -4px; border-width: 2px; }
+.wl-rabbit { position: relative; }
+.wl-rabbit .pile span { display: inline-block; }
+.share .pile span { display: inline-block; }
+.wl-gap { display: inline-block; width: 18px; height: 18px; margin: 1px; border: 2px dashed var(--dot); border-radius: 50%; vertical-align: middle; }
+/* Green rings vanish on green lettuce: ring the plants in blue. */
+.wl-plant .mark { inset: -3px; }
+.wl-plant .mark.ring { border-color: var(--dot-extra); }

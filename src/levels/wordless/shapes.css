@@ -1,0 +1,36 @@
+/* 形狀工坊 wordless pictures */
+.wl-svg .a-pop, .wl-svg .a-arrive, .wl-svg .a-shake { transform-box: fill-box; transform-origin: center; }
+.wl-svg { overflow: visible; }
+.shape.wl-svg.small { width: 150px; }
+.wl-pair { display: flex; gap: 10px; align-items: center; justify-content: center; width: 100%; }
+.wl-pair .shape.wl-svg { flex: 1 1 0; min-width: 0; }
+.wl-pair .wrong-pick { flex: 0 0 auto; display: flex; }
+.wl-pair .wrong-pick .shape.wl-svg.small { width: 120px; }
+
+.wl-svg .svg-tag { fill: var(--accent); stroke: #fff; stroke-width: 2; }
+.wl-svg .svg-tag-n { fill: #fff; font-size: 15px; font-weight: 800; text-anchor: middle; dominant-baseline: central; }
+/* Small pictures are drawn at half size, so their tags are drawn bigger. */
+.shape.small .svg-tag { r: 20px; }
+.shape.small .svg-tag-n { font-size: 24px; }
+.shape .side { fill: none; stroke-width: 9; stroke-linecap: round; }
+.shape .side.long { stroke: var(--dot); }
+.shape .side.short { stroke: var(--dot-extra); }
+.trace { stroke-dasharray: 1; animation: trace .5s backwards; }
+@keyframes trace { from { stroke-dashoffset: 1; } }
+.spin-in { animation: spin-in 1.2s backwards; }
+@keyframes spin-in { from { transform: rotate(-180deg); } }
+
+/* Folding: one half flips over the line in blue. */
+.fold-flip { transform-box: view-box; transform-origin: 100px 100px; transform: scaleX(-1); animation: fold-flip 1.2s ease-in-out backwards; }
+@keyframes fold-flip { from { transform: scaleX(1); } }
+.shape .ghost * { fill: var(--dot-extra); fill-opacity: .5; stroke: var(--dot-extra); }
+.fold-mark { font-size: 44px; font-weight: 900; text-anchor: middle; }
+.fold-mark.yes { fill: var(--good); }
+.fold-mark.no { fill: var(--dot); }
+.fold-pic .pick-box { fill: #fff; stroke: var(--dot); stroke-width: 3; stroke-dasharray: 6 4; }
+
+/* Ruler marks */
+.ruler .spot { fill: var(--good); stroke: #fff; stroke-width: 2; }
+.ruler .spot.end { fill: var(--accent); }
+.ruler .hop { fill: none; stroke: var(--dot-extra); stroke-width: 3; }
+.ruler .pick-bar { fill: none; stroke: var(--dot); stroke-width: 3; stroke-dasharray: 6 4; }

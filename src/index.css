@@ -273,3 +273,21 @@ button.pile { background: none; font-size: 22px; padding: 6px; }
 .stage.quiz.bay > .frames { width: 100%; }
 .dot.crossed { opacity: .35; position: relative; }
 .dot.crossed::after { content: '✕'; position: absolute; inset: 0; display: grid; place-items: center; color: #24361f; font-style: normal; font-size: 20px; }
+
+/* Wordless kit: put one on any element and start it later with style={delay(ms)} (see wordless/kit.ts) */
+.a-pop { animation: pop-in .35s backwards; }
+.a-fade { animation: fade-in .5s backwards; }
+.a-arrive { animation: arrive .5s backwards; }
+.a-leave { animation: leave .5s forwards; }
+.a-blink { animation: blink .6s 4 backwards; }
+.a-shake { animation: shake .5s 2 backwards; }
+.a-glow { animation: glow-filter 1.2s backwards; }
+.a-hi { animation: hi .5s forwards; }
+@keyframes fade-in { from { opacity: 0; } }
+@keyframes glow-filter { 30% { filter: drop-shadow(0 0 10px rgba(245, 158, 11, .9)); } }
+@keyframes hi { to { filter: drop-shadow(0 0 6px rgba(245, 158, 11, .9)); transform: scale(1.12); } }
+/* A number tag that pops onto anything with position: relative. */
+.tag-n { position: absolute; top: -10px; right: -10px; min-width: 24px; height: 24px; padding: 0 5px; border-radius: 12px; background: var(--accent); color: #fff; font-size: 14px; font-weight: 800; display: grid; place-items: center; animation: pop-in .35s backwards; z-index: 1; }
+/* The child's wrong choice, drawn so it can be compared with the picture. */
+.wrong-pick { outline: 4px dashed var(--dot); outline-offset: 4px; border-radius: 10px; animation: shake .5s 2; }
+.stage.quiz .eq-row { width: 100%; text-align: center; font-size: 26px; font-weight: 800; }

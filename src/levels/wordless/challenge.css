@@ -1,0 +1,37 @@
+/* 挑戰島, wordless */
+.ch-col { display: flex; flex-direction: column; align-items: center; gap: 14px; width: 100%; }
+.ch-tag { position: absolute; left: -20px; right: -20px; top: -14px; display: flex; justify-content: center; pointer-events: none; z-index: 1; }
+.ch-tag .tag-n { font-size: 13px; }
+
+/* Pattern: terms on the bottom row, the change on arcs above */
+.ch-pattern { display: grid; grid-template-columns: 46px 22px 46px 22px 46px 22px 46px 22px 46px; row-gap: 4px; justify-content: center; align-items: end; padding-top: 4px; }
+.ch-term { grid-row: 2; display: flex; justify-content: center; }
+.ch-pattern .bubble-num.ask { position: relative; }
+.ch-pattern .ask .ch-in { inset: 0; display: grid; place-items: center; border-radius: 50%; }
+.ch-pattern .bubble-num { min-width: 46px; width: 46px; height: 46px; font-size: 22px; padding: 0; }
+.ch-gap { grid-row: 1; margin: 0 21px; height: 26px; border: 3px solid var(--dot-extra); border-bottom: 0; border-radius: 18px 18px 0 0; display: flex; justify-content: center; font-size: 15px; font-weight: 800; color: var(--dot-extra); line-height: 1; }
+.ch-gap.next { border-style: dashed; border-color: var(--accent); color: #b26a00; animation: pop-in .35s backwards, blink .6s 3 backwards; }
+.ch-gap.wrong { border-style: dashed; border-color: var(--dot); color: var(--dot); }
+
+/* Balance */
+.ch-balance { gap: 2px; }
+.ch-scale { width: 100%; transform-origin: 50% 100%; }
+.ch-scale.tilting { animation: ch-tilt .8s ease-out backwards; }
+.ch-scale.settle { animation: ch-settle 1.3s ease-in-out backwards; }
+@keyframes ch-tilt { from { transform: rotate(0deg); } }
+@keyframes ch-settle { from { transform: rotate(-9deg); } 60% { transform: rotate(3deg); } }
+.ch-fruit { position: relative; }
+.ch-piles { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; margin-top: 8px; font-size: 28px; }
+.ch-pile { display: inline-flex; align-items: center; gap: 4px; }
+.ch-pile .weight { min-width: 40px; height: 36px; font-size: 20px; }
+
+/* Chickens and rabbits */
+.ch-legs { gap: 12px; }
+.ch-animals { display: flex; flex-wrap: wrap; justify-content: center; gap: 14px 8px; font-size: 32px; max-width: 330px; padding-top: 10px; }
+.ch-animal { position: relative; display: inline-block; }
+.ch-out { display: inline-block; animation: ch-out .4s forwards; }
+.ch-in { position: absolute; left: 0; top: 0; }
+@keyframes ch-out { to { transform: scale(0); opacity: 0; } }
+.ch-feet { display: flex; gap: 10px; font-size: 22px; }
+.ch-pair { padding: 2px 6px; border: 3px dashed var(--accent); border-radius: 12px; }
+.ch-pair.leaving { animation: pop-in .35s backwards, leave .5s forwards; }

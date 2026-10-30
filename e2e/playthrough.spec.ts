@@ -40,8 +40,10 @@ async function choiceLabels(page: Page) {
   }))
 }
 
-/** Clicks a wrong choice first when asked (and expects a hint), then the right one. */
-async function answer(page: Page, value: string | number, wrongFirst: boolean) {
+const stageHtml = (page: Page) => page.locator('.stage').first().innerHTML()
+
+/** Clicks a wrong choice first when asked (and expects a hint, and in practice a changed picture), then the right one. */
+async function answer(page: Page, value: string | number, wrongFirst: boolean, pictureHelps = false) {
   await expect(page.locator('.choice').nth(1)).toBeVisible()
   const shown = CHOICE_TEXT[value] ?? String(value)
   const labels = await choiceLabels(page)
@@ -49,8 +51,10 @@ async function answer(page: Page, value: string | number, wrongFirst: boolean) {
   expect(right, `answer ${shown} in [${labels}]`).toBeGreaterThanOrEqual(0)
   if (wrongFirst) {
     const before = await bubble(page)
+    const picture = await stageHtml(page)
     await page.locator('.choice').nth(right === 0 ? 1 : 0).click()
     await expect.poll(() => bubble(page), 'a hint replaces the prompt').not.toBe(before)
+    if (pictureHelps) await expect.poll(() => stageHtml(page), 'the picture shows the miss').not.toBe(picture)
   }
   await page.locator('.choice').nth(right).click()
   await expect(page.locator('.choice.ok')).toBeVisible()
@@ -59,14 +63,14 @@ async function answer(page: Page, value: string | number, wrongFirst: boolean) {
 async function playRound(page: Page, level: string, round: number) {
   const wrong = round === 1
   const quizAnswer = await page.locator('.stage').first().getAttribute('data-answer')
-  if (quizAnswer !== null) return answer(page, quizAnswer, wrong)
+  if (quizAnswer !== null) return answer(page, quizAnswer, wrong, true)
 
   if (level === '數一數') {
     const items = page.locator('.item')
     const n = await items.count()
     for (let i = 0; i < n; i++) await items.nth(i).click()
     await expect(page.locator('.badge')).toHaveText(Array.from({ length: n }, (_, i) => String(i + 1)))
-    return answer(page, n, wrong)
+    return answer(page, n, wrong, true)
   }
   if (level === '青蛙跳數線') {
     // The round's own prompt, not last round's praise or the lesson's closing line.
@@ -89,7 +93,7 @@ async function playRound(page: Page, level: string, round: number) {
   if (level === '十格框快看') {
     const n = await page.locator('.frame .dot').count()
     await expect(page.locator('.frame.hidden')).toBeVisible()
-    return answer(page, n, wrong)
+    return answer(page, n, wrong, true)
   }
   if (level === '湊十') return answer(page, 10 - (await page.locator('.frame .dot').count()), wrong)
   if (level === '十和幾') return answer(page, 10 + (await page.locator('.frame').nth(1).locator('.dot').count()), wrong)

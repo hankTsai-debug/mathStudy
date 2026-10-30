@@ -1,9 +1,9 @@
 {
   "name": "數學島 Math Islands",
   "short_name": "數學島",
-  "start_url": "/",
+  "start_url": "./",
   "display": "standalone",
   "background_color": "#eaf6e4",
   "theme_color": "#eaf6e4",
-  "icons": [{ "src": "/favicon.svg", "sizes": "any", "type": "image/svg+xml" }]
+  "icons": [{ "src": "favicon.svg", "sizes": "any", "type": "image/svg+xml" }]
 }
