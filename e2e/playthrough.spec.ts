@@ -135,8 +135,15 @@ async function doGuide(page: Page) {
   throw new Error('guide never finished')
 }
 
-async function playLevel(page: Page, island: string, level: string) {
+/** Opens an island, skipping its everyday story if this is the first visit. */
+async function openIsland(page: Page, island: string) {
   await card(page, island).click()
+  const skip = page.getByRole('button', { name: /跳過|Skip/ })
+  if (await skip.isVisible()) await skip.click()
+}
+
+async function playLevel(page: Page, island: string, level: string) {
+  await openIsland(page, island)
   await card(page, level).click()
   await watchLesson(page)
   await doGuide(page)
@@ -183,10 +190,22 @@ test('islands unlock along the map', async ({ page }) => {
   expect(await locked()).toEqual(['位值山谷', '乘法農場', '時間錢幣市集', '分數廚房', '大數港口'])
 })
 
+test('a first visit tells the island\'s everyday story, and it can be replayed', async ({ page }) => {
+  await seed(page)
+  await page.goto('/')
+  await card(page, '數數森林').click()
+  await expect(page.locator('.bubble')).toHaveText('今天是你的生日派對，來了 5 個好朋友！')
+  for (let i = 0; i < 3; i++) await page.getByRole('button', { name: '下一步' }).click()
+  await page.getByRole('button', { name: /出發/ }).click()
+  await expect(card(page, '生活故事')).toBeVisible()
+  await card(page, '生活故事').click()
+  await expect(page.locator('.stage.story')).toBeVisible()
+})
+
 test('a level already played skips the lesson, and 📖 replays it and the guide', async ({ page }) => {
   await seed(page, { 'forest-flash': 2 })
   await page.goto('/')
-  await card(page, '數數森林').click()
+  await openIsland(page, '數數森林')
   await card(page, '十格框快看').click()
   await expect(page.locator('.frame.hidden')).toBeVisible()
   await page.getByRole('button', { name: 'lesson' }).click()
@@ -198,7 +217,7 @@ test('a level already played skips the lesson, and 📖 replays it and the guide
 test('十的海灣 shows mistakes without words, giving more help each time', async ({ page }) => {
   await seed(page, { 'bay-make10': 1 })
   await page.goto('/')
-  await card(page, '十的海灣').click()
+  await openIsland(page, '十的海灣')
   await card(page, '湊十').click()
   const answer = await page.locator('.stage').first().getAttribute('data-answer')
   const wrong = page.locator('.choice:not(.no)').filter({ hasNotText: new RegExp(`^${answer}$`) })
@@ -232,7 +251,7 @@ test('switches to English everywhere', async ({ page }) => {
   await page.getByRole('button', { name: 'EN' }).click()
   await expect(page.locator('h1')).toHaveText('Math Islands')
   await expect(page.locator('html')).toHaveAttribute('lang', 'en')
-  await card(page, 'Fraction Kitchen').click()
+  await openIsland(page, 'Fraction Kitchen')
   await card(page, 'Pizza Slices').click()
   await expect(page.locator('.bubble')).toHaveText('Cut the pizza into 4 equal slices.')
   await watchLesson(page, 'Next', 'Your turn!')

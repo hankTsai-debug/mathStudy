@@ -4,12 +4,14 @@ import { STRINGS } from './i18n'
 import { ISLANDS, isUnlocked, type Island, type Level } from './islands'
 import { Play } from './Play'
 import { setSoundOn } from './sound'
+import { Story } from './Story'
 import { hush, say as speak } from './speech'
 import { loadProgress, saveProgress, type Progress } from './store'
 
 type Screen =
   | { name: 'map' }
   | { name: 'island'; island: Island }
+  | { name: 'story'; island: Island }
   | { name: 'play'; island: Island; level: Level; run: number }
   | { name: 'result'; island: Island; level: Level; run: number; firstTry: number; stars: number }
 
@@ -38,6 +40,10 @@ export default function App() {
   // Each island opens with the real problem its skills solve.
   const islandIntro = (island: Island, s = t) => `${s.islands[island.id].story} ${s.hiIsland}`
   const goIsland = (island: Island) => { hush(); prompt(islandIntro(island)); setScreen({ name: 'island', island }) }
+  // A first visit (no stars yet) opens with the island's everyday story.
+  const showStory = (island: Island) => { hush(); setScreen({ name: 'story', island }) }
+  const enterIsland = (island: Island) =>
+    island.levels.some(l => progress.stars[l.id]) ? goIsland(island) : showStory(island)
   const runs = useRef(0)
   const start = (island: Island, level: Level) => setScreen({ name: 'play', island, level, run: ++runs.current })
 
@@ -84,7 +90,7 @@ export default function App() {
                 <button
                   key={island.id}
                   className={`card${open ? '' : ' locked'}`}
-                  onClick={() => (open ? goIsland(island) : prompt(t.locked(t.islands[island.requires!].name)))}
+                  onClick={() => (open ? enterIsland(island) : prompt(t.locked(t.islands[island.requires!].name)))}
                 >
                   <span className="ico">{open ? island.icon : '🔒'}</span>
                   <span><div className="name">{t.islands[island.id].name}</div><div className="desc">{t.islands[island.id].desc}</div></span>
@@ -102,6 +108,10 @@ export default function App() {
               <button className="btn" onClick={goMap} aria-label="back">←</button>
               <h2>{screen.island.icon} {t.islands[screen.island.id].name}</h2>
             </div>
+            <button className="card story-card" onClick={() => showStory(screen.island)}>
+              <span className="ico">📖</span>
+              <span><div className="name">{t.storyBtn}</div><div className="desc">{t.islands[screen.island.id].scenes[0]}</div></span>
+            </button>
             {screen.island.levels.map(level => (
               <button key={level.id} className="card" onClick={() => start(screen.island, level)}>
                 <span className="ico">{level.icon}</span>
@@ -110,6 +120,10 @@ export default function App() {
               </button>
             ))}
           </section>
+        )}
+
+        {screen.name === 'story' && (
+          <Story key={screen.island.id} island={screen.island} t={t} prompt={prompt} onDone={() => goIsland(screen.island)} />
         )}
 
         {screen.name === 'play' && (
@@ -130,6 +144,7 @@ export default function App() {
             <div className="big">{starText(screen.stars)}</div>
             <p>{t.result(screen.firstTry)}</p>
             <p className="why">🎯 {t.useIt} {t.levels[screen.level.id].why}</p>
+            <p className="spot">👀 {t.spotIt} {t.levels[screen.level.id].spot}</p>
             <div className="choices">
               <button className="btn primary" onClick={() => start(screen.island, screen.level)}>{t.again}</button>
               <button className="btn" onClick={() => goIsland(screen.island)}>{t.back}</button>

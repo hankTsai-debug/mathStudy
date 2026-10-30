@@ -291,3 +291,10 @@ button.pile { background: none; font-size: 22px; padding: 6px; }
 /* The child's wrong choice, drawn so it can be compared with the picture. */
 .wrong-pick { outline: 4px dashed var(--dot); outline-offset: 4px; border-radius: 10px; animation: shake .5s 2; }
 .stage.quiz .eq-row { width: 100%; text-align: center; font-size: 26px; font-weight: 800; }
+
+/* Everyday stories */
+.stage.story { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; text-align: center; }
+.stage.story .row { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; font-size: 40px; line-height: 1.15; }
+.stage.story .row:first-child { font-size: 64px; }
+.card.story-card { background: #fff7e6; }
+.stage .spot { font-size: 15px; color: #0f766e; background: #e6f7f4; border-radius: 12px; padding: 8px 12px; margin: 8px auto; max-width: 440px; }
